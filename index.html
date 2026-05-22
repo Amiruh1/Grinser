@@ -22,7 +22,6 @@
             max-width: 1500px;
             margin: 0 auto;
         }
-        /* tarjetas */
         .card {
             background: white;
             border-radius: 24px;
@@ -83,15 +82,6 @@
         button:hover {
             background: #2563eb;
             transform: scale(0.98);
-        }
-        .btn-outline {
-            background: white;
-            color: #1e293b;
-            border: 1px solid #cbd5e1;
-        }
-        .btn-outline:hover {
-            background: #f8fafc;
-            border-color: #3b82f6;
         }
         .btn-danger {
             background: #ef4444;
@@ -168,6 +158,7 @@
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
+            align-items: center;
         }
         .icon-btn {
             background: none;
@@ -191,13 +182,36 @@
             justify-content: flex-end;
             margin-bottom: 20px;
         }
-        h3 {
-            margin: 0 0 8px 0;
-            font-size: 1.2rem;
+        .stand-select-small {
+            padding: 5px 8px;
+            font-size: 0.8rem;
+            border-radius: 30px;
+            background-color: #f8fafc;
+        }
+        .marca-img-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 60px;
+        }
+        .marca-img {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+            border-radius: 12px;
+            background: #ffffff;
+            padding: 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            transition: transform 0.2s;
+        }
+        .marca-img:hover {
+            transform: scale(1.05);
         }
         @media (max-width: 750px) {
             .form-grid { flex-direction: column; }
             .card { padding: 16px; }
+            .marca-img { width: 40px; height: 40px; padding: 4px; }
+            .marca-img-cell { min-width: 50px; }
         }
         .info-note {
             margin-top: 12px;
@@ -212,7 +226,7 @@
 <body>
 <div class="container">
     <div class="card">
-        <div class="card-title">📦 Gestión de Inventario | Fotocopiadoras & Tóner</div>
+        <div class="card-title">📦 Gestión de Inventario</div>
         <div class="form-grid">
             <div class="field-group">
                 <label>Tipo producto</label>
@@ -223,10 +237,10 @@
             </div>
             <div class="field-group">
                 <label>Marca *</label>
-                <select id="marcaSelect">
-                    <option value="Ricoh">Ricoh</option>
-                    <option value="Canon">Canon</option>
-                    <option value="Konica Minolta">Konica Minolta</option>
+                <select id="marcaSelect" style="font-weight: 500;">
+                    <option value="Ricoh">RICOH</option>
+                    <option value="Canon">CANON</option>
+                    <option value="Konica Minolta">KONICA MINOLTA</option>
                 </select>
             </div>
             <div class="field-group">
@@ -234,18 +248,18 @@
                 <input type="text" id="modelo" placeholder="Ej: MP 4055, iR-ADV C555, Bizhub 367" autocomplete="off">
             </div>
             <div class="field-group">
-                <label>Stand (ubicación)</label>
+                <label>Stand</label>
                 <select id="standSelect">
                     <option value="104">Stand 104</option>
                     <option value="105">Stand 105</option>
                     <option value="106">Stand 106</option>
+                    <option value="108">Stand 108</option>
                     <option value="109">Stand 109</option>
                     <option value="121">Stand 121</option>
                     <option value="134">Stand 134</option>
                     <option value="135">Stand 135</option>
                 </select>
             </div>
-            <!-- campos dinámicos para toner (cajas y unidades por caja) -->
             <div id="tonerFields" style="display: none;">
                 <div class="field-group">
                     <label>📦 Cantidad de cajas</label>
@@ -258,28 +272,25 @@
             </div>
             <div class="field-group">
                 <label>&nbsp;</label>
-                <button id="agregarBtn">➕ Agregar / Registrar</button>
+                <button id="agregarBtn">➕ Agregar / Acumular stock</button>
             </div>
         </div>
         <div class="info-note">
-            💡 <strong>Para tóner:</strong> Stock total = cajas × unidades por caja. Puedes ajustar stock unitario desde la tabla (+1 / -1 / -5).<br>
-            🔁 <strong>Modifica el stand</strong> de cualquier producto con el botón ✏️. <strong>Elimina</strong> con 🗑️ cuando esté agotado o ya no se use.
+            🔁 <strong>Cambiar stand:</strong> usa el desplegable junto a cada producto. 🗑️ <strong>Eliminar</strong> para borrar el producto.<br>
         </div>
     </div>
 
     <div class="export-buttons">
-        <button id="exportExcelBtn" class="btn-success">📎 Exportar a Excel (XLSX)</button>
+        <button id="exportExcelBtn" class="btn-success">📎 Exportar a Excel</button>
         <button id="exportPdfBtn" class="btn-success">📄 Exportar a PDF</button>
     </div>
 
     <div class="card">
-        <div class="card-title">📋 Inventario actual (por stand, marca y modelo)</div>
+        <div class="card-title">📋 Inventario actual</div>
         <div class="table-wrapper">
             <table id="inventoryTable">
                 <thead>
-                    <tr>
-                        <th>Tipo</th><th>Marca</th><th>Modelo</th><th>Stand</th><th>Stock Total (uds)</th><th>Contador / Ajuste</th><th>Acciones</th>
-                    </tr>
+                    <tr><th>Tipo</th><th>Marca</th><th>Modelo</th><th>Stand</th><th>Stock Total (uds)</th><th>Contador / Ajuste</th><th>Acciones</th></tr>
                 </thead>
                 <tbody id="tableBody">
                     <tr class="empty-row"><td colspan="7">No hay productos registrados. Agrega fotocopiadoras o tóner.</td></tr>
@@ -290,12 +301,26 @@
 </div>
 
 <script>
-    // ---------- ESTRUCTURA DE DATOS ----------
-    // Producto: { id, tipo, marca, modelo, stand, stockTotal }
     let productos = [];
     let nextId = 1;
+    const STANDS_VALIDOS = ["104", "105", "106", "108", "109", "121", "134", "135"];
+    
+    const MARCA_IMAGENES = {
+        "Ricoh": "https://1000marcas.net/wp-content/uploads/2020/03/Ricoh-logo.jpg",
+        "Canon": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSV8VCg7OUsGJKa9f_vaDyeBsQ8WTfuTKKCuQ&s",
+        "Konica Minolta": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRb2AEC17FI7SlBiMWUehWVZRyumT7pif1TJA&s"
+    };
+    
+    function getMarcaImageHTML(marca) {
+        const imgUrl = MARCA_IMAGENES[marca];
+        if (!imgUrl) return `<div class="marca-img-cell" style="min-width:60px;"></div>`;
+        return `<div class="marca-img-cell">
+                    <img class="marca-img" src="${imgUrl}" alt="${marca}" 
+                         style="width:48px; height:48px; object-fit:contain; background:white; border-radius:12px; padding:6px; box-shadow:0 2px 6px rgba(0,0,0,0.08);"
+                         onerror="this.onerror=null; this.style.display='none';">
+                </div>`;
+    }
 
-    // Referencias DOM
     const productTypeSelect = document.getElementById('productType');
     const tonerFieldsDiv = document.getElementById('tonerFields');
     const marcaSelect = document.getElementById('marcaSelect');
@@ -308,254 +333,271 @@
     const exportExcelBtn = document.getElementById('exportExcelBtn');
     const exportPdfBtn = document.getElementById('exportPdfBtn');
 
-    // Mostrar/ocultar campos de toner según tipo
     function toggleTonerFields() {
-        const type = productTypeSelect.value;
-        tonerFieldsDiv.style.display = type === 'toner' ? 'flex' : 'none';
+        tonerFieldsDiv.style.display = productTypeSelect.value === 'toner' ? 'flex' : 'none';
     }
     productTypeSelect.addEventListener('change', toggleTonerFields);
     toggleTonerFields();
 
-    // Función para agregar producto (sin datos de ejemplo automáticos)
+    function findExistingProduct(tipo, marca, modelo, stand) {
+        return productos.find(p => p.tipo === tipo && p.marca === marca && p.modelo === modelo && p.stand === stand);
+    }
+
     function agregarProducto() {
         const tipo = productTypeSelect.value;
         const marca = marcaSelect.value;
         let modelo = modeloInput.value.trim();
-        if (modelo === "") {
-            alert("Por favor ingresa el modelo del producto.");
-            return;
-        }
+        if (modelo === "") { alert("Por favor ingresa el modelo."); return; }
         const stand = standSelect.value;
-        let stockTotal = 0;
-
+        let nuevoStock = 0;
         if (tipo === 'fotocopiadora') {
-            // Para fotocopiadora, usualmente se ingresa cantidad física (equipos)
-            let cantidadInicial = prompt("Ingrese cantidad inicial de fotocopiadoras (unidades):", "1");
-            if (cantidadInicial === null) return;
-            let parsed = parseInt(cantidadInicial);
-            if (isNaN(parsed) || parsed < 0) parsed = 0;
-            stockTotal = parsed;
-        } else { // toner
-            let cajas = parseInt(cajasInput.value);
-            let unidadesPorCaja = parseInt(unidadesPorCajaInput.value);
-            if (isNaN(cajas) || cajas < 1) cajas = 1;
-            if (isNaN(unidadesPorCaja) || unidadesPorCaja < 1) unidadesPorCaja = 1;
-            stockTotal = cajas * unidadesPorCaja;
+            let cantidad = prompt("Cantidad de fotocopiadoras a agregar:", "1");
+            if (cantidad === null) return;
+            let parsed = parseInt(cantidad);
+            if (isNaN(parsed) || parsed <= 0) { if(parsed !== 0) { alert("Cantidad inválida."); return; } }
+            nuevoStock = parsed > 0 ? parsed : 0;
+        } else {
+            let cajas = parseInt(cajasInput.value) || 1;
+            let udsCaja = parseInt(unidadesPorCajaInput.value) || 1;
+            nuevoStock = cajas * udsCaja;
         }
-
-        // Verificar si ya existe producto exactamente igual (misma marca, modelo, stand, tipo) y sumar stock? Opcional, pero mejor permitir duplicados diferenciados.
-        // El usuario puede tener mismo modelo en diferente stand o mismas características; por claridad se permite registro independiente.
-        const nuevoProducto = {
-            id: nextId++,
-            tipo: tipo,
-            marca: marca,
-            modelo: modelo,
-            stand: stand,
-            stockTotal: stockTotal
-        };
-        productos.push(nuevoProducto);
+        if (nuevoStock === 0) { alert("No se agregó stock."); return; }
+        
+        const existente = findExistingProduct(tipo, marca, modelo, stand);
+        if (existente) {
+            existente.stockTotal += nuevoStock;
+            alert(`✅ Sumado ${nuevoStock} uds. Nuevo total: ${existente.stockTotal}`);
+        } else {
+            productos.push({ id: nextId++, tipo, marca, modelo, stand, stockTotal: nuevoStock });
+            alert(`✅ Nuevo producto con ${nuevoStock} uds.`);
+        }
         renderizarTabla();
-        // Limpiar modelo, pero mantener marca y tipo para siguiente ingreso ágil
         modeloInput.value = "";
-        if (tipo === 'toner') {
-            cajasInput.value = "1";
-            unidadesPorCajaInput.value = "10";
-        }
+        if (tipo === 'toner') { cajasInput.value = "1"; unidadesPorCajaInput.value = "10"; }
     }
 
-    // Modificar stand de un producto
-    function modificarStand(idProducto) {
+    function cambiarStandConListbox(idProducto, selectElement) {
+        const nuevoStand = selectElement.value;
+        if (!STANDS_VALIDOS.includes(nuevoStand)) { alert("Stand no válido."); return; }
         const producto = productos.find(p => p.id === idProducto);
-        if (!producto) return;
-        const nuevoStand = prompt(`Cambiar stand actual (${producto.stand}) por uno de: 104,105,106,109,121,134,135`, producto.stand);
-        if (nuevoStand !== null && nuevoStand.trim() !== "") {
-            const standsValidos = ["104","105","106","109","121","134","135"];
-            if (standsValidos.includes(nuevoStand.trim())) {
-                producto.stand = nuevoStand.trim();
+        if (!producto || producto.stand === nuevoStand) return;
+        const colision = findExistingProduct(producto.tipo, producto.marca, producto.modelo, nuevoStand);
+        if (colision) {
+            if (confirm(`⚠️ Ya existe en Stand ${nuevoStand} con stock ${colision.stockTotal}. ¿Fusionar?`)) {
+                colision.stockTotal += producto.stockTotal;
+                productos = productos.filter(p => p.id !== producto.id);
+                alert(`✅ Fusionado. Nuevo total: ${colision.stockTotal}`);
                 renderizarTabla();
-            } else {
-                alert("Stand no válido. Opciones: 104, 105, 106, 109, 121, 134, 135");
-            }
+            } else { selectElement.value = producto.stand; }
+        } else {
+            producto.stand = nuevoStand;
+            renderizarTabla();
         }
     }
 
-    // Eliminar producto
     function eliminarProducto(idProducto) {
-        if (confirm("¿Eliminar este producto del inventario? Se perderán los datos.")) {
+        const producto = productos.find(p => p.id === idProducto);
+        if (producto && confirm(`¿Eliminar "${producto.marca} ${producto.modelo}"?`)) {
             productos = productos.filter(p => p.id !== idProducto);
             renderizarTabla();
         }
     }
 
-    // Contador: aumentar o disminuir stock (unidades individuales)
     function ajustarStock(idProducto, delta) {
         const producto = productos.find(p => p.id === idProducto);
         if (!producto) return;
-        let nuevoStock = producto.stockTotal + delta;
-        if (nuevoStock < 0) {
-            if (confirm(`Stock actual es ${producto.stockTotal}. ¿Deseas eliminar el producto por estar agotado?`)) {
-                eliminarProducto(idProducto);
-            }
+        let nuevo = producto.stockTotal + delta;
+        if (nuevo < 0) {
+            if (confirm(`Stock ${producto.stockTotal}. ¿Eliminar por agotado?`)) eliminarProducto(idProducto);
             return;
         }
-        producto.stockTotal = nuevoStock;
-        // Si después del ajuste stock queda 0, sugerir eliminar (opcional)
-        if (producto.stockTotal === 0) {
-            setTimeout(() => {
-                if (confirm(`El producto "${producto.marca} ${producto.modelo}" está agotado (0 unidades). ¿Deseas eliminarlo del listado?`)) {
-                    eliminarProducto(producto.id);
-                }
-            }, 50);
-        }
+        producto.stockTotal = nuevo;
+        if (producto.stockTotal === 0) setTimeout(() => {
+            if (confirm(`"${producto.marca} ${producto.modelo}" agotado. ¿Eliminar?`)) eliminarProducto(producto.id);
+        }, 50);
         renderizarTabla();
     }
 
-    // Renderizado completo
     function renderizarTabla() {
-        if (!tableBody) return;
         if (productos.length === 0) {
-            tableBody.innerHTML = `<tr class="empty-row"><td colspan="7">No hay productos registrados. Agrega fotocopiadoras o tóner.</td></tr>`;
+            tableBody.innerHTML = `<tr class="empty-row"><td colspan="7">No hay productos registrados.</td></tr>`;
             return;
         }
-
         let html = '';
         productos.forEach(prod => {
-            const tipoIcon = prod.tipo === 'fotocopiadora' ? '🖨️ Fotocopiadora' : '🧴 Tóner';
+            let standOptions = STANDS_VALIDOS.map(s => `<option value="${s}" ${prod.stand === s ? 'selected' : ''}>Stand ${s}</option>`).join('');
             html += `<tr>
-                        <td>${tipoIcon}</td>
-                        <td><strong>${escapeHtml(prod.marca)}</strong></td>
-                        <td>${escapeHtml(prod.modelo)}</td>
-                        <td><span class="badge">Stand ${prod.stand}</span></td>
+                        <td>${prod.tipo === 'fotocopiadora' ? '🖨️ Fotocopiadora' : '🧴 Tóner'}</td>
+                        <td>${getMarcaImageHTML(prod.marca)}</td>
+                        <td><strong>${escapeHtml(prod.modelo)}</strong></td>
+                        <td><span class="badge" style="background:#dbeafe;">Stand ${prod.stand}</span></td>
                         <td>${prod.stockTotal} uds</td>
-                        <td>
-                            <div class="stock-counter">
-                                <button class="decrement-btn" data-id="${prod.id}" data-delta="-1">−</button>
-                                <span class="stock-value">${prod.stockTotal}</span>
-                                <button class="increment-btn" data-id="${prod.id}" data-delta="1">+</button>
-                                <button class="decrement5-btn" data-id="${prod.id}" data-delta="-5" style="background:#f1f5f9; width: auto; padding: 0 10px;">-5</button>
-                            </div>
-                        </td>
-                        <td class="action-icons">
-                            <button class="icon-btn edit-stand-btn" data-id="${prod.id}" title="Modificar stand">✏️ Stand</button>
-                            <button class="icon-btn delete-btn" data-id="${prod.id}" title="Eliminar producto (agotado o retirado)">🗑️ Eliminar</button>
-                        </td>
+                        <td><div class="stock-counter">
+                            <button class="decrement-btn" data-id="${prod.id}" data-delta="-1">−</button>
+                            <span class="stock-value">${prod.stockTotal}</span>
+                            <button class="increment-btn" data-id="${prod.id}" data-delta="1">+</button>
+                            <button class="decrement5-btn" data-id="${prod.id}" data-delta="-5">-5</button>
+                        </div></td>
+                        <td><div style="display:flex; gap:5px; flex-wrap:wrap;">
+                            <select class="stand-select-small" data-id="${prod.id}">${standOptions}</select>
+                            <button class="icon-btn apply-stand-btn" data-id="${prod.id}">✅</button>
+                            <button class="icon-btn delete-btn" data-id="${prod.id}">🗑️</button>
+                        </div></td>
                     </tr>`;
         });
         tableBody.innerHTML = html;
-
-        // Asignar eventos a botones dinámicos
-        document.querySelectorAll('.decrement-btn').forEach(btn => {
+        document.querySelectorAll('.decrement-btn, .increment-btn, .decrement5-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const id = parseInt(btn.getAttribute('data-id'));
-                ajustarStock(id, -1);
+                ajustarStock(parseInt(btn.dataset.id), parseInt(btn.dataset.delta));
             });
         });
-        document.querySelectorAll('.increment-btn').forEach(btn => {
+        document.querySelectorAll('.apply-stand-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const id = parseInt(btn.getAttribute('data-id'));
-                ajustarStock(id, 1);
-            });
-        });
-        document.querySelectorAll('.decrement5-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const id = parseInt(btn.getAttribute('data-id'));
-                ajustarStock(id, -5);
-            });
-        });
-        document.querySelectorAll('.edit-stand-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const id = parseInt(btn.getAttribute('data-id'));
-                modificarStand(id);
+                const id = parseInt(btn.dataset.id);
+                const select = btn.closest('tr').querySelector('.stand-select-small');
+                if (select) cambiarStandConListbox(id, select);
             });
         });
         document.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const id = parseInt(btn.getAttribute('data-id'));
-                eliminarProducto(id);
-            });
+            btn.addEventListener('click', (e) => eliminarProducto(parseInt(btn.dataset.id)));
         });
     }
 
-    // Utilidad para escapar HTML
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
+    function escapeHtml(str) { 
+        if(!str) return '';
+        return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); 
     }
 
-    // Exportar a Excel (XLSX) con columnas: Tipo, Marca, Modelo, Stand, Stock, Estado
+    // ========== EXPORTACIÓN A EXCEL CORREGIDA Y MEJORADA ==========
     function exportToExcel() {
         if (productos.length === 0) {
             alert("No hay datos para exportar.");
             return;
         }
-        const data = productos.map(p => ({
-            "Tipo": p.tipo === 'fotocopiadora' ? 'Fotocopiadora' : 'Tóner',
-            "Marca": p.marca,
-            "Modelo": p.modelo,
-            "Stand": p.stand,
-            "Stock (Unidades)": p.stockTotal,
-            "Estado": p.stockTotal === 0 ? "AGOTADO" : (p.stockTotal > 0 ? "Disponible" : "Sin stock")
-        }));
-        const ws = XLSX.utils.json_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Inventario_Ricoh_Canon_Konica");
-        XLSX.writeFile(wb, `inventario_fotocopiadoras_toner_${new Date().toISOString().slice(0,19)}.xlsx`);
-    }
 
-    // Exportar a PDF con jsPDF y autoTable
-    async function exportToPDF() {
-        if (productos.length === 0) {
-            alert("No hay registros para generar PDF.");
-            return;
-        }
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-        const tableColumn = ["Tipo", "Marca", "Modelo", "Stand", "Stock (uds)", "Estado"];
-        const tableRows = productos.map(p => [
+        // Crear libro
+        const wb = XLSX.utils.book_new();
+        
+        // Datos principales
+        const headers = ["Tipo", "Marca", "Modelo", "Stand", "Stock (Unidades)", "Estado"];
+        const rows = productos.map(p => [
             p.tipo === 'fotocopiadora' ? 'Fotocopiadora' : 'Tóner',
             p.marca,
             p.modelo,
             `Stand ${p.stand}`,
-            p.stockTotal.toString(),
-            p.stockTotal === 0 ? 'AGOTADO' : 'En existencia'
+            p.stockTotal,
+            p.stockTotal === 0 ? 'AGOTADO' : 'Disponible'
         ]);
-        doc.setFontSize(18);
-        doc.text("Reporte de Inventario - Equipos y Tóner", 14, 20);
-        doc.setFontSize(10);
-        doc.text(`Generado: ${new Date().toLocaleString()}`, 14, 30);
-        doc.text("Marcas: Ricoh, Canon, Konica Minolta", 14, 37);
-        doc.setFontSize(9);
-        doc.text("Nota: Puede modificar el stock y stands desde la aplicación web.", 14, 44);
-        doc.autoTable({
-            head: [tableColumn],
-            body: tableRows,
-            startY: 52,
-            theme: 'striped',
-            headStyles: { fillColor: [59, 130, 246], textColor: 255, fontSize: 10 },
-            bodyStyles: { fontSize: 8 },
-            columnStyles: { 0: { cellWidth: 30 }, 1: { cellWidth: 28 }, 2: { cellWidth: 45 }, 3: { cellWidth: 25 }, 4: { cellWidth: 25 }, 5: { cellWidth: 25 } },
-            margin: { left: 8, right: 8 }
+        
+        // Crear hoja con los datos
+        const sheetData = [headers, ...rows];
+        const ws = XLSX.utils.aoa_to_sheet(sheetData);
+        
+        // Configurar anchos de columna
+        ws['!cols'] = [
+            { wch: 18 },  // Tipo
+            { wch: 22 },  // Marca
+            { wch: 40 },  // Modelo
+            { wch: 12 },  // Stand
+            { wch: 18 },  // Stock
+            { wch: 14 }   // Estado
+        ];
+        
+        // Agregar información de cabecera en filas adicionales
+        // Crear una nueva hoja combinando título y datos
+        const finalSheetData = [
+            [`INVENTARIO DE FOTOCOPIADORAS Y TÓNER`],
+            [`Fecha: ${new Date().toLocaleString()}`],
+            [`Total de productos: ${productos.length}`],
+            [], // fila vacía
+            ...sheetData
+        ];
+        
+        const finalWs = XLSX.utils.aoa_to_sheet(finalSheetData);
+        
+        // Configurar anchos para la hoja final
+        finalWs['!cols'] = [
+            { wch: 25 },  // Ajustar ancho para el título
+            { wch: 22 },
+            { wch: 40 },
+            { wch: 12 },
+            { wch: 18 },
+            { wch: 14 }
+        ];
+        
+        // Fusionar celdas para el título (de A1 a F1)
+        if (!finalWs['!merges']) finalWs['!merges'] = [];
+        finalWs['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } });
+        
+        // Agregar hoja principal
+        XLSX.utils.book_append_sheet(wb, finalWs, "Inventario");
+        
+        // Crear hoja de resumen por stand
+        const resumenStand = {};
+        productos.forEach(p => {
+            resumenStand[p.stand] = (resumenStand[p.stand] || 0) + p.stockTotal;
         });
-        doc.save(`inventario_stands_${new Date().toISOString().slice(0,19)}.pdf`);
+        
+        const resumenHeaders = ["Stand", "Stock Total", "Cantidad de Productos"];
+        const resumenRows = Object.entries(resumenStand).map(([stand, total]) => {
+            const count = productos.filter(p => p.stand === stand).length;
+            return [`Stand ${stand}`, total, count];
+        });
+        
+        const resumenData = [resumenHeaders, ...resumenRows];
+        const resumenWs = XLSX.utils.aoa_to_sheet(resumenData);
+        resumenWs['!cols'] = [{ wch: 15 }, { wch: 18 }, { wch: 22 }];
+        XLSX.utils.book_append_sheet(wb, resumenWs, "Resumen por Stand");
+        
+        // Crear hoja de resumen por marca
+        const resumenMarca = {};
+        productos.forEach(p => {
+            resumenMarca[p.marca] = (resumenMarca[p.marca] || 0) + p.stockTotal;
+        });
+        
+        const marcaHeaders = ["Marca", "Stock Total", "Cantidad de Productos"];
+        const marcaRows = Object.entries(resumenMarca).map(([marca, total]) => {
+            const count = productos.filter(p => p.marca === marca).length;
+            return [marca, total, count];
+        });
+        
+        const marcaData = [marcaHeaders, ...marcaRows];
+        const marcaWs = XLSX.utils.aoa_to_sheet(marcaData);
+        marcaWs['!cols'] = [{ wch: 22 }, { wch: 18 }, { wch: 22 }];
+        XLSX.utils.book_append_sheet(wb, marcaWs, "Resumen por Marca");
+        
+        // Exportar archivo
+        XLSX.writeFile(wb, `inventario_${new Date().toISOString().slice(0,19)}.xlsx`);
     }
 
-    // Eventos principales
+    async function exportToPDF() {
+        if (productos.length === 0) { alert("No hay registros."); return; }
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        const tableColumn = ["Tipo", "Marca", "Modelo", "Stand", "Stock", "Estado"];
+        const tableRows = productos.map(p => [
+            p.tipo === 'fotocopiadora' ? 'Fotocopiadora' : 'Tóner',
+            p.marca, p.modelo, `Stand ${p.stand}`, p.stockTotal.toString(),
+            p.stockTotal === 0 ? 'AGOTADO' : 'En stock'
+        ]);
+        doc.setFontSize(16);
+        doc.text("Reporte de Inventario", 14, 20);
+        doc.setFontSize(10);
+        doc.text(`Generado: ${new Date().toLocaleString()}`, 14, 30);
+        doc.autoTable({
+            head: [tableColumn], body: tableRows, startY: 45, theme: 'striped',
+            headStyles: { fillColor: [41, 112, 165], textColor: 255, fontSize: 10, fontStyle: 'bold' },
+            bodyStyles: { fontSize: 8 }, columnStyles: { 0: { cellWidth: 30 }, 1: { cellWidth: 32 }, 2: { cellWidth: 45 }, 3: { cellWidth: 25 }, 4: { cellWidth: 20 }, 5: { cellWidth: 22 } },
+            alternateRowStyles: { fillColor: [240, 248, 255] }, margin: { left: 10, right: 10 }
+        });
+        doc.save(`inventario_${new Date().toISOString().slice(0,19)}.pdf`);
+    }
+
     agregarBtn.addEventListener('click', agregarProducto);
     exportExcelBtn.addEventListener('click', exportToExcel);
     exportPdfBtn.addEventListener('click', exportToPDF);
-
-    // NO se genera ningún ejemplo automático. El inventario empieza completamente vacío.
-    // Si se desea, el usuario agrega sus propios productos. Esto cumple con "no me crees ejemplos".
-    // La tabla iniciará mostrando "No hay productos registrados".
-    renderizarTabla(); // inicializa vacío
+    renderizarTabla();
 </script>
 </body>
 </html>
