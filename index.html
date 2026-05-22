@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Gestión de Inventario | Fotocopiadoras y Tóners | Ricoh, Canon, Konica Minolta</title>
+    <!-- Librerías para exportar: SheetJS (XLSX) y jsPDF (PDF) + autoTable -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', 'Roboto', sans-serif;
+        }
+        body {
+            background: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+        /* tarjetas */
+        .card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            padding: 20px 24px;
+            margin-bottom: 28px;
+            transition: 0.2s;
+        }
+        .card-title {
+            font-size: 1.6rem;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 18px;
+            color: #1e293b;
+            border-left: 5px solid #3b82f6;
+            padding-left: 16px;
+        }
+        .form-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            align-items: flex-end;
+        }
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 140px;
+        }
+        .field-group label {
+            font-weight: 600;
+            color: #334155;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        select, input, button {
+            padding: 10px 14px;
+            border-radius: 14px;
+            border: 1px solid #cbd5e1;
+            font-size: 0.9rem;
+            background: white;
+            transition: 0.2s;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        button:hover {
+            background: #2563eb;
+            transform: scale(0.98);
+        }
+        .btn-outline {
+            background: white;
+            color: #1e293b;
+            border: 1px solid #cbd5e1;
+        }
+        .btn-outline:hover {
+            background: #f8fafc;
+            border-color: #3b82f6;
+        }
+        .btn-danger {
+            background: #ef4444;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        .btn-success {
+            background: #10b981;
+        }
+        .btn-success:hover {
+            background: #059669;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 20px;
+            border: 1px solid #e2e8f0;
+            background: white;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        th {
+            background: #f1f5f9;
+            padding: 14px 10px;
+            text-align: left;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: middle;
+        }
+        .badge {
+            background: #e2e8f0;
+            padding: 4px 10px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .stock-counter {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .stock-counter button {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            font-size: 1.2rem;
+            border-radius: 40px;
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+        .stock-counter button:active {
+            transform: scale(0.92);
+        }
+        .stock-value {
+            font-weight: 700;
+            min-width: 45px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        .empty-row {
+            text-align: center;
+            color: #64748b;
+            padding: 30px;
+        }
+        .action-icons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .icon-btn {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 20px;
+            box-shadow: none;
+            color: #3b82f6;
+        }
+        .icon-btn:hover {
+            background: #f1f5f9;
+        }
+        .delete-btn {
+            color: #dc2626;
+        }
+        .export-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+        h3 {
+            margin: 0 0 8px 0;
+            font-size: 1.2rem;
+        }
+        @media (max-width: 750px) {
+            .form-grid { flex-direction: column; }
+            .card { padding: 16px; }
+        }
+        .info-note {
+            margin-top: 12px;
+            font-size: 0.8rem;
+            background: #fef9e3;
+            padding: 8px 12px;
+            border-radius: 16px;
+            color: #92400e;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <div class="card-title">📦 Gestión de Inventario | Fotocopiadoras & Tóner</div>
+        <div class="form-grid">
+            <div class="field-group">
+                <label>Tipo producto</label>
+                <select id="productType">
+                    <option value="fotocopiadora">🖨️ Fotocopiadora</option>
+                    <option value="toner">🧴 Tóner / Cartucho</option>
+                </select>
+            </div>
+            <div class="field-group">
+                <label>Marca *</label>
+                <select id="marcaSelect">
+                    <option value="Ricoh">Ricoh</option>
+                    <option value="Canon">Canon</option>
+                    <option value="Konica Minolta">Konica Minolta</option>
+                </select>
+            </div>
+            <div class="field-group">
+                <label>Modelo</label>
+                <input type="text" id="modelo" placeholder="Ej: MP 4055, iR-ADV C555, Bizhub 367" autocomplete="off">
+            </div>
+            <div class="field-group">
+                <label>Stand (ubicación)</label>
+                <select id="standSelect">
+                    <option value="104">Stand 104</option>
+                    <option value="105">Stand 105</option>
+                    <option value="106">Stand 106</option>
+                    <option value="109">Stand 109</option>
+                    <option value="121">Stand 121</option>
+                    <option value="134">Stand 134</option>
+                    <option value="135">Stand 135</option>
+                </select>
+            </div>
+            <!-- campos dinámicos para toner (cajas y unidades por caja) -->
+            <div id="tonerFields" style="display: none;">
+                <div class="field-group">
+                    <label>📦 Cantidad de cajas</label>
+                    <input type="number" id="cajas" value="1" min="1" step="1">
+                </div>
+                <div class="field-group">
+                    <label>🔢 Unidades por caja</label>
+                    <input type="number" id="unidadesPorCaja" value="10" min="1" step="1">
+                </div>
+            </div>
+            <div class="field-group">
+                <label>&nbsp;</label>
+                <button id="agregarBtn">➕ Agregar / Registrar</button>
+            </div>
+        </div>
+        <div class="info-note">
+            💡 <strong>Para tóner:</strong> Stock total = cajas × unidades por caja. Puedes ajustar stock unitario desde la tabla (+1 / -1 / -5).<br>
+            🔁 <strong>Modifica el stand</strong> de cualquier producto con el botón ✏️. <strong>Elimina</strong> con 🗑️ cuando esté agotado o ya no se use.
+        </div>
+    </div>
+
+    <div class="export-buttons">
+        <button id="exportExcelBtn" class="btn-success">📎 Exportar a Excel (XLSX)</button>
+        <button id="exportPdfBtn" class="btn-success">📄 Exportar a PDF</button>
+    </div>
+
+    <div class="card">
+        <div class="card-title">📋 Inventario actual (por stand, marca y modelo)</div>
+        <div class="table-wrapper">
+            <table id="inventoryTable">
+                <thead>
+                    <tr>
+                        <th>Tipo</th><th>Marca</th><th>Modelo</th><th>Stand</th><th>Stock Total (uds)</th><th>Contador / Ajuste</th><th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr class="empty-row"><td colspan="7">No hay productos registrados. Agrega fotocopiadoras o tóner.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---------- ESTRUCTURA DE DATOS ----------
+    // Producto: { id, tipo, marca, modelo, stand, stockTotal }
+    let productos = [];
+    let nextId = 1;
+
+    // Referencias DOM
+    const productTypeSelect = document.getElementById('productType');
+    const tonerFieldsDiv = document.getElementById('tonerFields');
+    const marcaSelect = document.getElementById('marcaSelect');
+    const modeloInput = document.getElementById('modelo');
+    const standSelect = document.getElementById('standSelect');
+    const cajasInput = document.getElementById('cajas');
+    const unidadesPorCajaInput = document.getElementById('unidadesPorCaja');
+    const agregarBtn = document.getElementById('agregarBtn');
+    const tableBody = document.getElementById('tableBody');
+    const exportExcelBtn = document.getElementById('exportExcelBtn');
+    const exportPdfBtn = document.getElementById('exportPdfBtn');
+
+    // Mostrar/ocultar campos de toner según tipo
+    function toggleTonerFields() {
+        const type = productTypeSelect.value;
+        tonerFieldsDiv.style.display = type === 'toner' ? 'flex' : 'none';
+    }
+    productTypeSelect.addEventListener('change', toggleTonerFields);
+    toggleTonerFields();
+
+    // Función para agregar producto (sin datos de ejemplo automáticos)
+    function agregarProducto() {
+        const tipo = productTypeSelect.value;
+        const marca = marcaSelect.value;
+        let modelo = modeloInput.value.trim();
+        if (modelo === "") {
+            alert("Por favor ingresa el modelo del producto.");
+            return;
+        }
+        const stand = standSelect.value;
+        let stockTotal = 0;
+
+        if (tipo === 'fotocopiadora') {
+            // Para fotocopiadora, usualmente se ingresa cantidad física (equipos)
+            let cantidadInicial = prompt("Ingrese cantidad inicial de fotocopiadoras (unidades):", "1");
+            if (cantidadInicial === null) return;
+            let parsed = parseInt(cantidadInicial);
+            if (isNaN(parsed) || parsed < 0) parsed = 0;
+            stockTotal = parsed;
+        } else { // toner
+            let cajas = parseInt(cajasInput.value);
+            let unidadesPorCaja = parseInt(unidadesPorCajaInput.value);
+            if (isNaN(cajas) || cajas < 1) cajas = 1;
+            if (isNaN(unidadesPorCaja) || unidadesPorCaja < 1) unidadesPorCaja = 1;
+            stockTotal = cajas * unidadesPorCaja;
+        }
+
+        // Verificar si ya existe producto exactamente igual (misma marca, modelo, stand, tipo) y sumar stock? Opcional, pero mejor permitir duplicados diferenciados.
+        // El usuario puede tener mismo modelo en diferente stand o mismas características; por claridad se permite registro independiente.
+        const nuevoProducto = {
+            id: nextId++,
+            tipo: tipo,
+            marca: marca,
+            modelo: modelo,
+            stand: stand,
+            stockTotal: stockTotal
+        };
+        productos.push(nuevoProducto);
+        renderizarTabla();
+        // Limpiar modelo, pero mantener marca y tipo para siguiente ingreso ágil
+        modeloInput.value = "";
+        if (tipo === 'toner') {
+            cajasInput.value = "1";
+            unidadesPorCajaInput.value = "10";
+        }
+    }
+
+    // Modificar stand de un producto
+    function modificarStand(idProducto) {
+        const producto = productos.find(p => p.id === idProducto);
+        if (!producto) return;
+        const nuevoStand = prompt(`Cambiar stand actual (${producto.stand}) por uno de: 104,105,106,109,121,134,135`, producto.stand);
+        if (nuevoStand !== null && nuevoStand.trim() !== "") {
+            const standsValidos = ["104","105","106","109","121","134","135"];
+            if (standsValidos.includes(nuevoStand.trim())) {
+                producto.stand = nuevoStand.trim();
+                renderizarTabla();
+            } else {
+                alert("Stand no válido. Opciones: 104, 105, 106, 109, 121, 134, 135");
+            }
+        }
+    }
+
+    // Eliminar producto
+    function eliminarProducto(idProducto) {
+        if (confirm("¿Eliminar este producto del inventario? Se perderán los datos.")) {
+            productos = productos.filter(p => p.id !== idProducto);
+            renderizarTabla();
+        }
+    }
+
+    // Contador: aumentar o disminuir stock (unidades individuales)
+    function ajustarStock(idProducto, delta) {
+        const producto = productos.find(p => p.id === idProducto);
+        if (!producto) return;
+        let nuevoStock = producto.stockTotal + delta;
+        if (nuevoStock < 0) {
+            if (confirm(`Stock actual es ${producto.stockTotal}. ¿Deseas eliminar el producto por estar agotado?`)) {
+                eliminarProducto(idProducto);
+            }
+            return;
+        }
+        producto.stockTotal = nuevoStock;
+        // Si después del ajuste stock queda 0, sugerir eliminar (opcional)
+        if (producto.stockTotal === 0) {
+            setTimeout(() => {
+                if (confirm(`El producto "${producto.marca} ${producto.modelo}" está agotado (0 unidades). ¿Deseas eliminarlo del listado?`)) {
+                    eliminarProducto(producto.id);
+                }
+            }, 50);
+        }
+        renderizarTabla();
+    }
+
+    // Renderizado completo
+    function renderizarTabla() {
+        if (!tableBody) return;
+        if (productos.length === 0) {
+            tableBody.innerHTML = `<tr class="empty-row"><td colspan="7">No hay productos registrados. Agrega fotocopiadoras o tóner.</td></tr>`;
+            return;
+        }
+
+        let html = '';
+        productos.forEach(prod => {
+            const tipoIcon = prod.tipo === 'fotocopiadora' ? '🖨️ Fotocopiadora' : '🧴 Tóner';
+            html += `<tr>
+                        <td>${tipoIcon}</td>
+                        <td><strong>${escapeHtml(prod.marca)}</strong></td>
+                        <td>${escapeHtml(prod.modelo)}</td>
+                        <td><span class="badge">Stand ${prod.stand}</span></td>
+                        <td>${prod.stockTotal} uds</td>
+                        <td>
+                            <div class="stock-counter">
+                                <button class="decrement-btn" data-id="${prod.id}" data-delta="-1">−</button>
+                                <span class="stock-value">${prod.stockTotal}</span>
+                                <button class="increment-btn" data-id="${prod.id}" data-delta="1">+</button>
+                                <button class="decrement5-btn" data-id="${prod.id}" data-delta="-5" style="background:#f1f5f9; width: auto; padding: 0 10px;">-5</button>
+                            </div>
+                        </td>
+                        <td class="action-icons">
+                            <button class="icon-btn edit-stand-btn" data-id="${prod.id}" title="Modificar stand">✏️ Stand</button>
+                            <button class="icon-btn delete-btn" data-id="${prod.id}" title="Eliminar producto (agotado o retirado)">🗑️ Eliminar</button>
+                        </td>
+                    </tr>`;
+        });
+        tableBody.innerHTML = html;
+
+        // Asignar eventos a botones dinámicos
+        document.querySelectorAll('.decrement-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = parseInt(btn.getAttribute('data-id'));
+                ajustarStock(id, -1);
+            });
+        });
+        document.querySelectorAll('.increment-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = parseInt(btn.getAttribute('data-id'));
+                ajustarStock(id, 1);
+            });
+        });
+        document.querySelectorAll('.decrement5-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = parseInt(btn.getAttribute('data-id'));
+                ajustarStock(id, -5);
+            });
+        });
+        document.querySelectorAll('.edit-stand-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(btn.getAttribute('data-id'));
+                modificarStand(id);
+            });
+        });
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = parseInt(btn.getAttribute('data-id'));
+                eliminarProducto(id);
+            });
+        });
+    }
+
+    // Utilidad para escapar HTML
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // Exportar a Excel (XLSX) con columnas: Tipo, Marca, Modelo, Stand, Stock, Estado
+    function exportToExcel() {
+        if (productos.length === 0) {
+            alert("No hay datos para exportar.");
+            return;
+        }
+        const data = productos.map(p => ({
+            "Tipo": p.tipo === 'fotocopiadora' ? 'Fotocopiadora' : 'Tóner',
+            "Marca": p.marca,
+            "Modelo": p.modelo,
+            "Stand": p.stand,
+            "Stock (Unidades)": p.stockTotal,
+            "Estado": p.stockTotal === 0 ? "AGOTADO" : (p.stockTotal > 0 ? "Disponible" : "Sin stock")
+        }));
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Inventario_Ricoh_Canon_Konica");
+        XLSX.writeFile(wb, `inventario_fotocopiadoras_toner_${new Date().toISOString().slice(0,19)}.xlsx`);
+    }
+
+    // Exportar a PDF con jsPDF y autoTable
+    async function exportToPDF() {
+        if (productos.length === 0) {
+            alert("No hay registros para generar PDF.");
+            return;
+        }
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        const tableColumn = ["Tipo", "Marca", "Modelo", "Stand", "Stock (uds)", "Estado"];
+        const tableRows = productos.map(p => [
+            p.tipo === 'fotocopiadora' ? 'Fotocopiadora' : 'Tóner',
+            p.marca,
+            p.modelo,
+            `Stand ${p.stand}`,
+            p.stockTotal.toString(),
+            p.stockTotal === 0 ? 'AGOTADO' : 'En existencia'
+        ]);
+        doc.setFontSize(18);
+        doc.text("Reporte de Inventario - Equipos y Tóner", 14, 20);
+        doc.setFontSize(10);
+        doc.text(`Generado: ${new Date().toLocaleString()}`, 14, 30);
+        doc.text("Marcas: Ricoh, Canon, Konica Minolta", 14, 37);
+        doc.setFontSize(9);
+        doc.text("Nota: Puede modificar el stock y stands desde la aplicación web.", 14, 44);
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 52,
+            theme: 'striped',
+            headStyles: { fillColor: [59, 130, 246], textColor: 255, fontSize: 10 },
+            bodyStyles: { fontSize: 8 },
+            columnStyles: { 0: { cellWidth: 30 }, 1: { cellWidth: 28 }, 2: { cellWidth: 45 }, 3: { cellWidth: 25 }, 4: { cellWidth: 25 }, 5: { cellWidth: 25 } },
+            margin: { left: 8, right: 8 }
+        });
+        doc.save(`inventario_stands_${new Date().toISOString().slice(0,19)}.pdf`);
+    }
+
+    // Eventos principales
+    agregarBtn.addEventListener('click', agregarProducto);
+    exportExcelBtn.addEventListener('click', exportToExcel);
+    exportPdfBtn.addEventListener('click', exportToPDF);
+
+    // NO se genera ningún ejemplo automático. El inventario empieza completamente vacío.
+    // Si se desea, el usuario agrega sus propios productos. Esto cumple con "no me crees ejemplos".
+    // La tabla iniciará mostrando "No hay productos registrados".
+    renderizarTabla(); // inicializa vacío
+</script>
+</body>
+</html>
