@@ -154,12 +154,6 @@
             color: #64748b;
             padding: 30px;
         }
-        .action-icons {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
         .icon-btn {
             background: none;
             border: none;
@@ -224,6 +218,23 @@
             background-color: #fef9e3;
             border-color: #fbbf24;
         }
+        .serie-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 180px;
+        }
+        .serie-group label {
+            font-weight: 600;
+            color: #334155;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .serie-group input {
+            background-color: #f0fdf4;
+            border-color: #22c55e;
+        }
         @media (max-width: 750px) {
             .form-grid { flex-direction: column; }
             .card { padding: 16px; }
@@ -247,6 +258,16 @@
             font-weight: 600;
             display: inline-block;
             white-space: nowrap;
+        }
+        .serie-badge {
+            background: #dcfce7;
+            color: #166534;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            font-family: monospace;
+            display: inline-block;
         }
         .info-na {
             color: #94a3b8;
@@ -292,10 +313,18 @@
                     <option value="135">Stand 135</option>
                 </select>
             </div>
-            <div id="contadorFieldGroup" class="contador-group" style="display: none;">
-                <label>📟 Contador (copias/páginas)</label>
-                <input type="number" id="contadorInicial" value="0" min="0" step="100" placeholder="Ej: 12500">
+            <!-- Campos específicos para Fotocopiadora -->
+            <div id="fotocopiadoraFields" style="display: none;">
+                <div class="field-group serie-group">
+                    <label>🔢 Número de Serie</label>
+                    <input type="text" id="numeroSerie" placeholder="Ej: RIC-12345, CN-67890" autocomplete="off">
+                </div>
+                <div class="contador-group">
+                    <label>📟 Contador (copias/páginas)</label>
+                    <input type="number" id="contadorInicial" value="0" min="0" step="100" placeholder="Ej: 12500">
+                </div>
             </div>
+            <!-- Campos específicos para Tóner -->
             <div id="tonerFields" style="display: none;">
                 <div class="field-group">
                     <label>📦 Cantidad de cajas</label>
@@ -313,6 +342,8 @@
         </div>
         <div class="info-note">
             🔁 <strong>Cambiar stand:</strong> usa el desplegable junto a cada producto. 🗑️ <strong>Eliminar</strong> para borrar el producto.<br>
+            🔢 <strong>Fotocopiadoras:</strong> se identifican por NÚMERO DE SERIE único. Cada vez que agregas una fotocopiadora, se suma 1 unidad al stock del equipo.<br>
+            📟 El contador se muestra solo para referencia.
         </div>
     </div>
 
@@ -330,17 +361,18 @@
                         <th>Tipo</th>
                         <th>Marca</th>
                         <th>Modelo</th>
+                        <th>Serie / Referencia</th>
                         <th>Stand</th>
-                        <th>Stock Total (uds)</th>
-                        <th id="contadorHeader" style="display: none;">Contador (copias)</th>
-                        <th>Contador / Ajuste</th>
+                        <th>Stock (uds)</th>
+                        <th>Contador</th>
+                        <th>Ajuste stock</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
-                    <tr class="empty-row"><td colspan="7">No hay productos registrados. Agrega fotocopiadoras o tóner.</td></tr>
+                    <tr class="empty-row"><td colspan="9">No hay productos registrados. Agrega fotocopiadoras o tóner.</td></tr>
                 </tbody>
-            </table>
+             </table>
         </div>
     </div>
 </div>
@@ -368,8 +400,9 @@
 
     const productTypeSelect = document.getElementById('productType');
     const tonerFieldsDiv = document.getElementById('tonerFields');
-    const contadorFieldGroup = document.getElementById('contadorFieldGroup');
+    const fotocopiadoraFieldsDiv = document.getElementById('fotocopiadoraFields');
     const contadorInicialInput = document.getElementById('contadorInicial');
+    const numeroSerieInput = document.getElementById('numeroSerie');
     const marcaSelect = document.getElementById('marcaSelect');
     const modeloInput = document.getElementById('modelo');
     const standSelect = document.getElementById('standSelect');
@@ -379,88 +412,108 @@
     const tableBody = document.getElementById('tableBody');
     const exportExcelBtn = document.getElementById('exportExcelBtn');
     const exportPdfBtn = document.getElementById('exportPdfBtn');
-    const contadorHeader = document.getElementById('contadorHeader');
 
     function toggleFieldsByType() {
         const tipo = productTypeSelect.value;
         if (tipo === 'fotocopiadora') {
             tonerFieldsDiv.style.display = 'none';
-            contadorFieldGroup.style.display = 'flex';
+            fotocopiadoraFieldsDiv.style.display = 'flex';
         } else {
+            fotocopiadoraFieldsDiv.style.display = 'none';
             tonerFieldsDiv.style.display = 'flex';
-            contadorFieldGroup.style.display = 'none';
             contadorInicialInput.value = "0";
+            numeroSerieInput.value = "";
         }
     }
     productTypeSelect.addEventListener('change', toggleFieldsByType);
     toggleFieldsByType();
 
-    function findExistingProduct(tipo, marca, modelo, stand) {
-        return productos.find(p => p.tipo === tipo && p.marca === marca && p.modelo === modelo && p.stand === stand);
+    // Para fotocopiadoras: la clave única incluye SERIE (cada equipo es único)
+    function findExistingFotocopiadora(marca, modelo, serie, stand) {
+        return productos.find(p => p.tipo === 'fotocopiadora' && p.marca === marca && p.modelo === modelo && p.serie === serie && p.stand === stand);
+    }
+    
+    // Para tóner: agrupamos por modelo y stand (sin serie)
+    function findExistingToner(tipo, marca, modelo, stand) {
+        if (tipo !== 'toner') return null;
+        return productos.find(p => p.tipo === 'toner' && p.marca === marca && p.modelo === modelo && p.stand === stand);
     }
 
     function agregarProducto() {
         const tipo = productTypeSelect.value;
         const marca = marcaSelect.value;
         let modelo = modeloInput.value.trim();
-        if (modelo === "") { alert("Por favor ingresa el modelo."); return; }
+        if (modelo === "") { 
+            alert("Por favor ingresa el modelo."); 
+            return; 
+        }
         const stand = standSelect.value;
         
-        let nuevoStock = 0;
-        let nuevoContador = null;
-        
         if (tipo === 'fotocopiadora') {
-            let cantidad = prompt("Cantidad de fotocopiadoras a agregar:", "1");
-            if (cantidad === null) return;
-            let parsed = parseInt(cantidad);
-            if (isNaN(parsed) || parsed <= 0) { 
-                if(parsed !== 0) { alert("Cantidad inválida."); return; } 
-                else { nuevoStock = 0; }
-            } else {
-                nuevoStock = parsed;
+            let serie = numeroSerieInput.value.trim();
+            if (serie === "") { 
+                alert("Por favor ingresa el número de serie de la fotocopiadora."); 
+                return; 
             }
+            // Ya NO preguntamos cantidad, siempre es 1 unidad por cada ingreso
+            const cantidad = 1;
             let contadorVal = parseInt(contadorInicialInput.value);
             if (isNaN(contadorVal)) contadorVal = 0;
-            nuevoContador = contadorVal >= 0 ? contadorVal : 0;
-        } else {
+            
+            // Buscar si ya existe exactamente la misma fotocopiadora (mismo modelo, serie y stand)
+            const existente = findExistingFotocopiadora(marca, modelo, serie, stand);
+            if (existente) {
+                existente.stockTotal += cantidad;
+                if (contadorVal > existente.contador) {
+                    existente.contador = contadorVal;
+                }
+                // Sin alert - operación silenciosa
+            } else {
+                productos.push({
+                    id: nextId++,
+                    tipo: 'fotocopiadora',
+                    marca,
+                    modelo,
+                    serie,
+                    stand,
+                    stockTotal: cantidad,
+                    contador: contadorVal
+                });
+                // Sin alert - operación silenciosa
+            }
+            numeroSerieInput.value = "";
+            contadorInicialInput.value = "0";
+        } 
+        else { // Tóner
             let cajas = parseInt(cajasInput.value) || 1;
             let udsCaja = parseInt(unidadesPorCajaInput.value) || 1;
-            nuevoStock = cajas * udsCaja;
-            if (nuevoStock <= 0) { alert("Debe haber al menos una unidad."); return; }
-        }
-        
-        if (tipo === 'fotocopiadora' && nuevoStock === 0) {
-            alert("No se agregó stock.");
-            return;
-        }
-        
-        const existente = findExistingProduct(tipo, marca, modelo, stand);
-        if (existente) {
-            existente.stockTotal += nuevoStock;
-            if (tipo === 'fotocopiadora' && nuevoContador !== null && nuevoContador > (existente.contador || 0)) {
-                existente.contador = nuevoContador;
-                alert(`✅ Sumado ${nuevoStock} uds. Contador actualizado a ${existente.contador}. Nuevo total: ${existente.stockTotal}`);
-            } else if (tipo === 'fotocopiadora') {
-                alert(`✅ Sumado ${nuevoStock} uds. Contador se mantiene en ${existente.contador || 0}. Nuevo total: ${existente.stockTotal}`);
+            let nuevoStock = cajas * udsCaja;
+            if (nuevoStock <= 0) { 
+                alert("Debe haber al menos una unidad."); 
+                return; 
+            }
+            
+            const existente = findExistingToner('toner', marca, modelo, stand);
+            if (existente) {
+                existente.stockTotal += nuevoStock;
+                // Sin alert - operación silenciosa
             } else {
-                alert(`✅ Sumado ${nuevoStock} uds. Nuevo total: ${existente.stockTotal}`);
+                productos.push({
+                    id: nextId++,
+                    tipo: 'toner',
+                    marca,
+                    modelo,
+                    stand,
+                    stockTotal: nuevoStock
+                });
+                // Sin alert - operación silenciosa
             }
-        } else {
-            const nuevoProducto = { id: nextId++, tipo, marca, modelo, stand, stockTotal: nuevoStock };
-            if (tipo === 'fotocopiadora') {
-                nuevoProducto.contador = nuevoContador !== null ? nuevoContador : 0;
-            }
-            productos.push(nuevoProducto);
-            alert(tipo === 'fotocopiadora' ? `✅ Nueva fotocopiadora con stock ${nuevoStock} uds. Contador: ${nuevoProducto.contador}` : `✅ Nuevo tóner con ${nuevoStock} uds.`);
-        }
-        renderizarTabla();
-        modeloInput.value = "";
-        if (tipo === 'fotocopiadora') {
-            contadorInicialInput.value = "0";
-        } else {
             cajasInput.value = "1";
             unidadesPorCajaInput.value = "10";
         }
+        
+        modeloInput.value = "";
+        renderizarTabla();
     }
 
     function cambiarStandConListbox(idProducto, selectElement) {
@@ -468,7 +521,14 @@
         if (!STANDS_VALIDOS.includes(nuevoStand)) { alert("Stand no válido."); return; }
         const producto = productos.find(p => p.id === idProducto);
         if (!producto || producto.stand === nuevoStand) return;
-        const colision = findExistingProduct(producto.tipo, producto.marca, producto.modelo, nuevoStand);
+        
+        let colision = null;
+        if (producto.tipo === 'fotocopiadora') {
+            colision = findExistingFotocopiadora(producto.marca, producto.modelo, producto.serie, nuevoStand);
+        } else {
+            colision = findExistingToner('toner', producto.marca, producto.modelo, nuevoStand);
+        }
+        
         if (colision) {
             if (confirm(`⚠️ Ya existe en Stand ${nuevoStand} con stock ${colision.stockTotal}. ¿Fusionar?`)) {
                 colision.stockTotal += producto.stockTotal;
@@ -476,7 +536,6 @@
                     colision.contador = producto.contador;
                 }
                 productos = productos.filter(p => p.id !== producto.id);
-                alert(`✅ Fusionado. Nuevo total: ${colision.stockTotal}`);
                 renderizarTabla();
             } else { 
                 selectElement.value = producto.stand; 
@@ -489,7 +548,7 @@
 
     function eliminarProducto(idProducto) {
         const producto = productos.find(p => p.id === idProducto);
-        if (producto && confirm(`¿Eliminar "${producto.marca} ${producto.modelo}"?`)) {
+        if (producto && confirm(`¿Eliminar ${producto.tipo === 'fotocopiadora' ? 'fotocopiadora' : 'tóner'} "${producto.marca} ${producto.modelo}"${producto.serie ? ' (Serie: ' + producto.serie + ')' : ''}?`)) {
             productos = productos.filter(p => p.id !== idProducto);
             renderizarTabla();
         }
@@ -500,54 +559,26 @@
         if (!producto) return;
         let nuevo = producto.stockTotal + delta;
         if (nuevo < 0) {
-            if (confirm(`Stock ${producto.stockTotal}. ¿Eliminar por agotado?`)) eliminarProducto(idProducto);
+            if (confirm(`Stock actual ${producto.stockTotal}. ¿Eliminar este producto por falta de stock?`)) {
+                eliminarProducto(idProducto);
+            }
             return;
         }
         producto.stockTotal = nuevo;
-        if (producto.tipo === 'fotocopiadora' && delta < 0 && confirm(`¿Deseas actualizar el contador de ${producto.modelo}? Actual: ${producto.contador || 0}`)) {
-            let nuevoContador = prompt("Nuevo valor del contador (páginas):", producto.contador || 0);
-            if (nuevoContador !== null) {
-                let parsed = parseInt(nuevoContador);
-                if (!isNaN(parsed) && parsed >= 0) producto.contador = parsed;
-            }
-        } else if (producto.tipo === 'fotocopiadora' && delta > 0 && confirm(`¿Quieres actualizar el contador de la fotocopiadora al agregar unidades?`)) {
-            let nuevoContador = prompt("Contador actual (páginas):", producto.contador || 0);
-            if (nuevoContador !== null) {
-                let parsed = parseInt(nuevoContador);
-                if (!isNaN(parsed) && parsed >= 0) producto.contador = parsed;
-            }
+        
+        if (producto.stockTotal === 0) {
+            setTimeout(() => {
+                if (confirm(`"${producto.marca} ${producto.modelo}"${producto.serie ? ' Serie: ' + producto.serie : ''} está agotado. ¿Eliminar?`)) {
+                    eliminarProducto(producto.id);
+                }
+            }, 50);
         }
-        if (producto.stockTotal === 0) setTimeout(() => {
-            if (confirm(`"${producto.marca} ${producto.modelo}" agotado. ¿Eliminar?`)) eliminarProducto(producto.id);
-        }, 50);
         renderizarTabla();
-    }
-    
-    function editarContador(idProducto) {
-        const producto = productos.find(p => p.id === idProducto);
-        if (!producto || producto.tipo !== 'fotocopiadora') return;
-        let nuevoValor = prompt(`Ingrese el nuevo contador para ${producto.marca} ${producto.modelo}:`, producto.contador || 0);
-        if (nuevoValor !== null) {
-            let parsed = parseInt(nuevoValor);
-            if (!isNaN(parsed) && parsed >= 0) {
-                producto.contador = parsed;
-                renderizarTabla();
-            } else alert("Valor inválido.");
-        }
     }
 
     function renderizarTabla() {
-        const hayFotocopiadora = productos.some(p => p.tipo === 'fotocopiadora');
-        
-        // Mostrar u ocultar la columna completa del contador
-        if (contadorHeader) {
-            contadorHeader.style.display = hayFotocopiadora ? 'table-cell' : 'none';
-        }
-        
-        // Ajustar colspan del mensaje vacío
         if (productos.length === 0) {
-            const colspanCount = hayFotocopiadora ? 8 : 7;
-            tableBody.innerHTML = `<tr class="empty-row"><td colspan="${colspanCount}">No hay productos registrados. Agrega fotocopiadoras o tóner.</td></tr>`;
+            tableBody.innerHTML = `<tr class="empty-row"><td colspan="9">No hay productos registrados. Agrega fotocopiadoras o tóner.</td></tr>`;
             return;
         }
         
@@ -555,23 +586,25 @@
         for (const prod of productos) {
             const standOptions = STANDS_VALIDOS.map(s => `<option value="${s}" ${prod.stand === s ? 'selected' : ''}>Stand ${s}</option>`).join('');
             
-            let contadorCell = '';
-            if (hayFotocopiadora) {
-                if (prod.tipo === 'fotocopiadora') {
-                    const contadorVal = prod.contador !== undefined ? prod.contador : 0;
-                    contadorCell = `<td><div style="display:flex; gap:6px; align-items:center;"><span class="contador-badge">📟 ${contadorVal.toLocaleString()}</span><button class="icon-btn edit-contador-btn" data-id="${prod.id}" title="Editar contador">✏️</button></div></td>`;
-                } else {
-                    contadorCell = `<td><span class="info-na">—</span></td>`;
-                }
+            let serieReferencia = '';
+            let contadorDisplay = '';
+            
+            if (prod.tipo === 'fotocopiadora') {
+                serieReferencia = `<span class="serie-badge">🔢 ${escapeHtml(prod.serie)}</span>`;
+                contadorDisplay = `<span class="contador-badge">📟 ${(prod.contador || 0).toLocaleString()}</span>`;
+            } else {
+                serieReferencia = `<span class="info-na">—</span>`;
+                contadorDisplay = `<span class="info-na">—</span>`;
             }
             
             html += `<tr>
                         <td>${prod.tipo === 'fotocopiadora' ? '🖨️ Fotocopiadora' : '🧴 Tóner'}</td>
                         <td>${getMarcaImageHTML(prod.marca)}</td>
                         <td><strong>${escapeHtml(prod.modelo)}</strong></td>
+                        <td>${serieReferencia}</td>
                         <td><span class="badge" style="background:#dbeafe;">Stand ${prod.stand}</span></td>
                         <td>${prod.stockTotal} uds</td>
-                        ${contadorCell}
+                        <td>${contadorDisplay}</td>
                         <td><div class="stock-counter">
                             <button class="decrement-btn" data-id="${prod.id}" data-delta="-1">−</button>
                             <span class="stock-value">${prod.stockTotal}</span>
@@ -583,7 +616,7 @@
                             <button class="icon-btn apply-stand-btn" data-id="${prod.id}">✅</button>
                             <button class="icon-btn delete-btn" data-id="${prod.id}">🗑️</button>
                         </div></td>
-                    </tr>`;
+                     </tr>`;
         }
         
         tableBody.innerHTML = html;
@@ -604,12 +637,6 @@
         document.querySelectorAll('.delete-btn').forEach(btn => {
             btn.addEventListener('click', (e) => eliminarProducto(parseInt(btn.dataset.id)));
         });
-        document.querySelectorAll('.edit-contador-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                editarContador(parseInt(btn.dataset.id));
-            });
-        });
     }
 
     function escapeHtml(str) { 
@@ -620,44 +647,37 @@
     function exportToExcel() {
         if (productos.length === 0) { alert("No hay datos para exportar."); return; }
         const wb = XLSX.utils.book_new();
-        const hayFoto = productos.some(p => p.tipo === 'fotocopiadora');
-        let headers = ["Tipo", "Marca", "Modelo", "Stand", "Stock (Unidades)", "Estado"];
-        if (hayFoto) headers.splice(5, 0, "Contador (copias/páginas)");
         
-        const rows = productos.map(p => {
-            let baseRow = [
-                p.tipo === 'fotocopiadora' ? 'Fotocopiadora' : 'Tóner',
-                p.marca,
-                p.modelo,
-                `Stand ${p.stand}`,
-                p.stockTotal,
-                p.stockTotal === 0 ? 'AGOTADO' : 'Disponible'
-            ];
-            if (hayFoto) {
-                let contadorVal = p.tipo === 'fotocopiadora' ? (p.contador || 0).toLocaleString() : '---';
-                baseRow.splice(5, 0, contadorVal);
-            }
-            return baseRow;
-        });
+        const headers = ["Tipo", "Marca", "Modelo", "Serie (solo fotocopiadora)", "Stand", "Stock (Unidades)", "Contador (copias)", "Estado"];
+        const rows = productos.map(p => [
+            p.tipo === 'fotocopiadora' ? 'Fotocopiadora' : 'Tóner',
+            p.marca,
+            p.modelo,
+            p.tipo === 'fotocopiadora' ? (p.serie || '') : '---',
+            `Stand ${p.stand}`,
+            p.stockTotal,
+            p.tipo === 'fotocopiadora' ? (p.contador || 0).toLocaleString() : '---',
+            p.stockTotal === 0 ? 'AGOTADO' : 'Disponible'
+        ]);
         
         const sheetData = [headers, ...rows];
         const ws = XLSX.utils.aoa_to_sheet(sheetData);
-        const colWidths = hayFoto ? [{ wch: 18 }, { wch: 22 }, { wch: 40 }, { wch: 12 }, { wch: 18 }, { wch: 22 }, { wch: 14 }] : [{ wch: 18 }, { wch: 22 }, { wch: 40 }, { wch: 12 }, { wch: 18 }, { wch: 14 }];
-        ws['!cols'] = colWidths;
+        ws['!cols'] = [{ wch: 18 }, { wch: 22 }, { wch: 35 }, { wch: 25 }, { wch: 12 }, { wch: 15 }, { wch: 18 }, { wch: 14 }];
         
         const finalSheetData = [
             [`INVENTARIO DE FOTOCOPIADORAS Y TÓNER`],
             [`Fecha: ${new Date().toLocaleString()}`],
             [`Total de productos: ${productos.length}`],
+            [`Nota: Las fotocopiadoras se identifican por número de serie único`],
             [], 
             ...sheetData
         ];
         const finalWs = XLSX.utils.aoa_to_sheet(finalSheetData);
-        finalWs['!cols'] = colWidths;
+        finalWs['!cols'] = [{ wch: 25 }, { wch: 22 }, { wch: 35 }, { wch: 25 }, { wch: 12 }, { wch: 15 }, { wch: 18 }, { wch: 14 }];
         if (!finalWs['!merges']) finalWs['!merges'] = [];
-        const lastColIndex = hayFoto ? 6 : 5;
-        finalWs['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: lastColIndex } });
+        finalWs['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } });
         XLSX.utils.book_append_sheet(wb, finalWs, "Inventario");
+        
         XLSX.writeFile(wb, `inventario_${new Date().toISOString().slice(0,19)}.xlsx`);
     }
 
@@ -665,36 +685,44 @@
         if (productos.length === 0) { alert("No hay registros."); return; }
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-        const hayFoto = productos.some(p => p.tipo === 'fotocopiadora');
-        let tableColumn = ["Tipo", "Marca", "Modelo", "Stand", "Stock", "Estado"];
-        if (hayFoto) tableColumn.splice(5, 0, "Contador");
         
-        const tableRows = productos.map(p => {
-            let row = [
-                p.tipo === 'fotocopiadora' ? 'Fotocopiadora' : 'Tóner',
-                p.marca,
-                p.modelo,
-                `Stand ${p.stand}`,
-                p.stockTotal.toString(),
-                p.stockTotal === 0 ? 'AGOTADO' : 'En stock'
-            ];
-            if (hayFoto) {
-                let contVal = p.tipo === 'fotocopiadora' ? (p.contador || 0).toLocaleString() : 'N/A';
-                row.splice(5, 0, contVal);
-            }
-            return row;
-        });
+        const tableColumn = ["Tipo", "Marca", "Modelo", "Serie", "Stand", "Stock", "Contador", "Estado"];
+        const tableRows = productos.map(p => [
+            p.tipo === 'fotocopiadora' ? 'Fotocopiadora' : 'Tóner',
+            p.marca,
+            p.modelo,
+            p.tipo === 'fotocopiadora' ? (p.serie || '') : '---',
+            `Stand ${p.stand}`,
+            p.stockTotal.toString(),
+            p.tipo === 'fotocopiadora' ? (p.contador || 0).toLocaleString() : '---',
+            p.stockTotal === 0 ? 'AGOTADO' : 'En stock'
+        ]);
         
         doc.setFontSize(16);
-        doc.text("Reporte de Inventario", 14, 20);
+        doc.text("Reporte de Inventario - Fotocopiadoras y Tóner", 14, 20);
         doc.setFontSize(10);
         doc.text(`Generado: ${new Date().toLocaleString()}`, 14, 30);
+        doc.text(`Total de equipos/productos: ${productos.length}`, 14, 37);
+        
         doc.autoTable({
-            head: [tableColumn], body: tableRows, startY: 45, theme: 'striped',
+            head: [tableColumn], 
+            body: tableRows, 
+            startY: 45, 
+            theme: 'striped',
             headStyles: { fillColor: [41, 112, 165], textColor: 255, fontSize: 9, fontStyle: 'bold' },
             bodyStyles: { fontSize: 8 }, 
-            columnStyles: hayFoto ? { 0: { cellWidth: 28 }, 1: { cellWidth: 30 }, 2: { cellWidth: 42 }, 3: { cellWidth: 22 }, 4: { cellWidth: 18 }, 5: { cellWidth: 28 }, 6: { cellWidth: 20 } } : { 0: { cellWidth: 30 }, 1: { cellWidth: 32 }, 2: { cellWidth: 45 }, 3: { cellWidth: 25 }, 4: { cellWidth: 20 }, 5: { cellWidth: 22 } },
-            alternateRowStyles: { fillColor: [240, 248, 255] }, margin: { left: 8, right: 8 }
+            columnStyles: { 
+                0: { cellWidth: 28 }, 
+                1: { cellWidth: 28 }, 
+                2: { cellWidth: 38 }, 
+                3: { cellWidth: 28 }, 
+                4: { cellWidth: 18 }, 
+                5: { cellWidth: 15 }, 
+                6: { cellWidth: 22 }, 
+                7: { cellWidth: 18 } 
+            },
+            alternateRowStyles: { fillColor: [240, 248, 255] }, 
+            margin: { left: 8, right: 8 }
         });
         doc.save(`inventario_${new Date().toISOString().slice(0,19)}.pdf`);
     }
