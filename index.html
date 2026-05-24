@@ -108,6 +108,12 @@
         .btn-success:hover {
             background: #059669;
         }
+        .btn-secondary {
+            background: #64748b;
+        }
+        .btn-secondary:hover {
+            background: #475569;
+        }
         .table-wrapper {
             overflow-x: auto;
             border-radius: 16px;
@@ -231,9 +237,6 @@
         .contador-group, .serie-group {
             width: 100%;
         }
-        .contador-group input, .serie-group input {
-            width: 100%;
-        }
         .info-note {
             margin-top: 12px;
             font-size: 0.7rem;
@@ -275,6 +278,13 @@
             flex-wrap: wrap;
             gap: 4px;
             align-items: center;
+        }
+        .reset-btn {
+            background: #ef4444;
+            margin-top: 8px;
+        }
+        .reset-btn:hover {
+            background: #dc2626;
         }
         @media (min-width: 640px) {
             body {
@@ -379,15 +389,11 @@
                     <input type="number" id="contadorInicial" value="0" min="0" step="100" placeholder="Ej: 12500">
                 </div>
             </div>
-            <!-- Campos específicos para Tóner -->
+            <!-- Campos específicos para Tóner (solo cantidad de unidades, sin cajas) -->
             <div id="tonerFields" style="display: none; width: 100%;">
                 <div class="field-group">
-                    <label>📦 Cantidad de cajas</label>
-                    <input type="number" id="cajas" value="1" min="1" step="1">
-                </div>
-                <div class="field-group">
-                    <label>🔢 Unidades por caja</label>
-                    <input type="number" id="unidadesPorCaja" value="10" min="1" step="1">
+                    <label>🧴 Cantidad de unidades</label>
+                    <input type="number" id="cantidadToners" value="1" min="1" step="1" placeholder="Número de tóneres">
                 </div>
             </div>
             <div class="field-group">
@@ -396,15 +402,17 @@
             </div>
         </div>
         <div class="info-note">
+            💾 <strong>Base de datos local:</strong> Los datos se guardan automáticamente. Al recargar la página se mantiene el inventario.<br>
             🔁 <strong>Cambiar stand:</strong> usa el desplegable junto a cada producto. 🗑️ <strong>Eliminar</strong> para borrar.<br>
             🔢 <strong>Fotocopiadoras:</strong> se identifican por NÚMERO DE SERIE único. Cada vez que agregas, suma 1 unidad.<br>
-            📱 <strong>Diseño responsive:</strong> optimizado para iPhone 11 y móviles.
+            🧴 <strong>Tóneres:</strong> ahora se agregan directamente por cantidad de unidades.
         </div>
     </div>
 
     <div class="export-buttons">
         <button id="exportExcelBtn" class="btn-success">📎 Excel</button>
         <button id="exportPdfBtn" class="btn-success">📄 PDF</button>
+        <button id="resetStorageBtn" class="btn-secondary">🗑️ Reiniciar datos</button>
     </div>
 
     <div class="card">
@@ -436,6 +444,7 @@
     let productos = [];
     let nextId = 1;
     const STANDS_VALIDOS = ["104", "105", "106", "108", "109", "121", "134", "135"];
+    const STORAGE_KEY = 'inventario_fotocopiadoras';
     
     const MARCA_IMAGENES = {
         "Ricoh": "https://1000marcas.net/wp-content/uploads/2020/03/Ricoh-logo.jpg",
@@ -453,6 +462,43 @@
                 </div>`;
     }
 
+    // Guardar en localStorage
+    function guardarEnStorage() {
+        const dataToSave = {
+            productos: productos,
+            nextId: nextId
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+    }
+    
+    // Cargar desde localStorage
+    function cargarDesdeStorage() {
+        const data = localStorage.getItem(STORAGE_KEY);
+        if (data) {
+            try {
+                const parsed = JSON.parse(data);
+                productos = parsed.productos || [];
+                nextId = parsed.nextId || 1;
+                return true;
+            } catch(e) {
+                console.error("Error al cargar datos:", e);
+                return false;
+            }
+        }
+        return false;
+    }
+    
+    // Reiniciar todos los datos
+    function reiniciarDatos() {
+        if (confirm("⚠️ ¿Estás seguro de que quieres REINICIAR todos los datos? Se perderá todo el inventario actual.")) {
+            productos = [];
+            nextId = 1;
+            localStorage.removeItem(STORAGE_KEY);
+            renderizarTabla();
+            alert("✅ Datos reiniciados correctamente.");
+        }
+    }
+
     const productTypeSelect = document.getElementById('productType');
     const tonerFieldsDiv = document.getElementById('tonerFields');
     const fotocopiadoraFieldsDiv = document.getElementById('fotocopiadoraFields');
@@ -461,12 +507,12 @@
     const marcaSelect = document.getElementById('marcaSelect');
     const modeloInput = document.getElementById('modelo');
     const standSelect = document.getElementById('standSelect');
-    const cajasInput = document.getElementById('cajas');
-    const unidadesPorCajaInput = document.getElementById('unidadesPorCaja');
+    const cantidadTonersInput = document.getElementById('cantidadToners');
     const agregarBtn = document.getElementById('agregarBtn');
     const tableBody = document.getElementById('tableBody');
     const exportExcelBtn = document.getElementById('exportExcelBtn');
     const exportPdfBtn = document.getElementById('exportPdfBtn');
+    const resetStorageBtn = document.getElementById('resetStorageBtn');
 
     function toggleFieldsByType() {
         const tipo = productTypeSelect.value;
@@ -512,7 +558,7 @@
                 alert("Por favor ingresa el número de serie de la fotocopiadora."); 
                 return; 
             }
-            const cantidad = 1;
+            const cantidad = 1; // Siempre suma 1 unidad por cada fotocopiadora
             let contadorVal = parseInt(contadorInicialInput.value);
             if (isNaN(contadorVal)) contadorVal = 0;
             
@@ -537,18 +583,16 @@
             numeroSerieInput.value = "";
             contadorInicialInput.value = "0";
         } 
-        else {
-            let cajas = parseInt(cajasInput.value) || 1;
-            let udsCaja = parseInt(unidadesPorCajaInput.value) || 1;
-            let nuevoStock = cajas * udsCaja;
-            if (nuevoStock <= 0) { 
+        else { // Tóner - ahora directamente por unidades
+            let cantidadUnidades = parseInt(cantidadTonersInput.value) || 1;
+            if (cantidadUnidades <= 0) { 
                 alert("Debe haber al menos una unidad."); 
                 return; 
             }
             
             const existente = findExistingToner('toner', marca, modelo, stand);
             if (existente) {
-                existente.stockTotal += nuevoStock;
+                existente.stockTotal += cantidadUnidades;
             } else {
                 productos.push({
                     id: nextId++,
@@ -556,14 +600,14 @@
                     marca,
                     modelo,
                     stand,
-                    stockTotal: nuevoStock
+                    stockTotal: cantidadUnidades
                 });
             }
-            cajasInput.value = "1";
-            unidadesPorCajaInput.value = "10";
+            cantidadTonersInput.value = "1";
         }
         
         modeloInput.value = "";
+        guardarEnStorage();
         renderizarTabla();
     }
 
@@ -587,12 +631,14 @@
                     colision.contador = producto.contador;
                 }
                 productos = productos.filter(p => p.id !== producto.id);
+                guardarEnStorage();
                 renderizarTabla();
             } else { 
                 selectElement.value = producto.stand; 
             }
         } else {
             producto.stand = nuevoStand;
+            guardarEnStorage();
             renderizarTabla();
         }
     }
@@ -601,6 +647,7 @@
         const producto = productos.find(p => p.id === idProducto);
         if (producto && confirm(`¿Eliminar ${producto.tipo === 'fotocopiadora' ? 'fotocopiadora' : 'tóner'} "${producto.marca} ${producto.modelo}"${producto.serie ? ' (Serie: ' + producto.serie + ')' : ''}?`)) {
             productos = productos.filter(p => p.id !== idProducto);
+            guardarEnStorage();
             renderizarTabla();
         }
     }
@@ -616,6 +663,7 @@
             return;
         }
         producto.stockTotal = nuevo;
+        guardarEnStorage();
         
         if (producto.stockTotal === 0) {
             setTimeout(() => {
@@ -667,7 +715,7 @@
                             <button class="icon-btn apply-stand-btn" data-id="${prod.id}" title="Cambiar stand">✅</button>
                             <button class="icon-btn delete-btn" data-id="${prod.id}" title="Eliminar">🗑️</button>
                         </div></td>
-                    </tr>`;
+                     </tr>`;
         }
         
         tableBody.innerHTML = html;
@@ -749,7 +797,7 @@
         ]);
         
         doc.setFontSize(16);
-        doc.text("Reporte de Inventario", 14, 20);
+        doc.text("Reporte de Inventario - Fotocopiadoras y Tóner", 14, 20);
         doc.setFontSize(10);
         doc.text(`Generado: ${new Date().toLocaleString()}`, 14, 30);
         doc.text(`Total de productos: ${productos.length}`, 14, 37);
@@ -777,10 +825,14 @@
         doc.save(`inventario_${new Date().toISOString().slice(0,19)}.pdf`);
     }
 
+    // Inicializar: cargar datos guardados y luego renderizar
+    cargarDesdeStorage();
+    renderizarTabla();
+    
     agregarBtn.addEventListener('click', agregarProducto);
     exportExcelBtn.addEventListener('click', exportToExcel);
     exportPdfBtn.addEventListener('click', exportToPDF);
-    renderizarTabla();
+    resetStorageBtn.addEventListener('click', reiniciarDatos);
 </script>
 </body>
 </html>
