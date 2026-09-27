@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>Gestión de Inventario | Fotocopiadoras y Tóners | Ricoh, Canon, Konica Minolta</title>
-    <!-- Librerías para exportar: SheetJS (XLSX) y jsPDF (PDF) + autoTable -->
+    <title>Inventario Fácil | Fotocopiadoras y Tóners</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
@@ -12,95 +11,196 @@
         * {
             box-sizing: border-box;
             font-family: system-ui, 'Segoe UI', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 0;
         }
         body {
-            background: #f0f2f5;
-            margin: 0;
+            background: #eef2f6;
             padding: 12px;
+            font-size: 18px;
+            color: #1e293b;
         }
         .container {
-            max-width: 100%;
+            max-width: 600px;
             margin: 0 auto;
         }
         .card {
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            padding: 16px;
+            border-radius: 28px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            padding: 20px 18px;
             margin-bottom: 20px;
-            transition: 0.2s;
         }
         .card-title {
-            font-size: 1.4rem;
-            font-weight: 600;
-            margin-top: 0;
-            margin-bottom: 14px;
-            color: #1e293b;
-            border-left: 4px solid #3b82f6;
-            padding-left: 12px;
-        }
-        .form-grid {
+            font-size: 1.7rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #0f172a;
             display: flex;
-            flex-direction: column;
-            gap: 12px;
+            align-items: center;
+            gap: 10px;
+            border-left: 6px solid #3b82f6;
+            padding-left: 14px;
+            line-height: 1.2;
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            gap: 8px;
+        }
+        .step {
+            flex: 1;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #94a3b8;
+            padding: 10px 4px;
+            border-radius: 40px;
+            background: #f1f5f9;
+            transition: 0.2s;
+            border: 2px solid transparent;
+        }
+        .step.active {
+            background: #dbeafe;
+            color: #1e40af;
+            border-color: #3b82f6;
+            font-weight: 700;
+        }
+        .step.completed {
+            background: #dcfce7;
+            color: #166534;
+            border-color: #22c55e;
+        }
+        .step-number {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            line-height: 28px;
+            background: white;
+            border-radius: 50%;
+            margin-right: 6px;
+            font-weight: 700;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+        .step.active .step-number {
+            background: #3b82f6;
+            color: white;
+        }
+        .step.completed .step-number {
+            background: #22c55e;
+            color: white;
+        }
+        .step-content {
+            display: none;
+        }
+        .step-content.active {
+            display: block;
+        }
+        .big-option-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 10px 0 20px;
+        }
+        .big-option {
+            background: #f8fafc;
+            border: 3px solid #e2e8f0;
+            border-radius: 24px;
+            padding: 28px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.15s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        .big-option.selected {
+            border-color: #3b82f6;
+            background: #eff6ff;
+            box-shadow: 0 8px 16px rgba(59,130,246,0.15);
+        }
+        .big-option .emoji {
+            font-size: 3.8rem;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .big-option .label {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #1e293b;
+        }
+        .big-option small {
+            display: block;
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-top: 6px;
         }
         .field-group {
             display: flex;
             flex-direction: column;
-            gap: 4px;
-            width: 100%;
+            gap: 8px;
+            margin-bottom: 22px;
         }
         .field-group label {
-            font-weight: 600;
+            font-weight: 700;
             color: #334155;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        select, input, button {
-            padding: 12px 14px;
-            border-radius: 14px;
-            border: 1px solid #cbd5e1;
-            font-size: 0.9rem;
-            background: white;
-            transition: 0.2s;
-            width: 100%;
-            -webkit-appearance: none;
-            appearance: none;
-        }
-        select {
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
-            background-size: 18px;
-        }
-        select:focus, input:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
-        }
-        button {
-            background: #3b82f6;
-            color: white;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-            text-align: center;
-            justify-content: center;
+            font-size: 1.1rem;
             display: flex;
             align-items: center;
             gap: 8px;
         }
-        button:hover {
+        select, input {
+            padding: 18px 18px;
+            border-radius: 20px;
+            border: 2px solid #cbd5e1;
+            font-size: 1.2rem;
+            background: white;
+            width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            transition: 0.2s;
+            font-weight: 500;
+        }
+        select {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 18px center;
+            background-size: 24px;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 5px rgba(59,130,246,0.15);
+        }
+        .btn {
+            padding: 20px 24px;
+            border-radius: 30px;
+            border: none;
+            font-size: 1.3rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            transition: 0.15s;
+            width: 100%;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .btn:active {
+            transform: scale(0.97);
+        }
+        .btn-primary {
+            background: #3b82f6;
+        }
+        .btn-primary:hover {
             background: #2563eb;
-            transform: scale(0.98);
         }
-        .btn-danger {
-            background: #ef4444;
+        .btn-secondary {
+            background: #94a3b8;
         }
-        .btn-danger:hover {
-            background: #dc2626;
+        .btn-secondary:hover {
+            background: #64748b;
         }
         .btn-success {
             background: #10b981;
@@ -108,265 +208,323 @@
         .btn-success:hover {
             background: #059669;
         }
-        .btn-secondary {
-            background: #64748b;
+        .btn-danger {
+            background: #ef4444;
         }
-        .btn-secondary:hover {
-            background: #475569;
+        .btn-danger:hover {
+            background: #dc2626;
         }
-        .table-wrapper {
-            overflow-x: auto;
-            border-radius: 16px;
-            border: 1px solid #e2e8f0;
+        .btn-outline {
             background: white;
-            -webkit-overflow-scrolling: touch;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.75rem;
-            min-width: 600px;
-        }
-        th {
-            background: #f1f5f9;
-            padding: 10px 8px;
-            text-align: left;
-            font-weight: 600;
-            color: #0f172a;
-            font-size: 0.7rem;
-        }
-        td {
-            padding: 10px 8px;
-            border-bottom: 1px solid #e2e8f0;
-            vertical-align: middle;
-        }
-        .badge {
-            background: #e2e8f0;
-            padding: 3px 8px;
-            border-radius: 30px;
-            font-size: 0.65rem;
-            font-weight: 600;
-            display: inline-block;
-            white-space: nowrap;
-        }
-        .stock-counter {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            flex-wrap: nowrap;
-        }
-        .stock-counter button {
-            width: 32px;
-            height: 32px;
-            padding: 0;
-            font-size: 1.2rem;
-            border-radius: 40px;
-            background: #e2e8f0;
-            color: #0f172a;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .stock-counter button:active {
-            transform: scale(0.92);
-        }
-        .stock-value {
-            font-weight: 700;
-            min-width: 35px;
-            text-align: center;
-            font-size: 0.9rem;
-        }
-        .empty-row {
-            text-align: center;
-            color: #64748b;
-            padding: 24px;
-        }
-        .icon-btn {
-            background: none;
-            border: none;
-            font-size: 1.1rem;
-            cursor: pointer;
-            padding: 6px 10px;
-            border-radius: 30px;
+            color: #1e293b;
+            border: 2px solid #cbd5e1;
             box-shadow: none;
-            color: #3b82f6;
-            width: auto;
-            display: inline-flex;
         }
-        .icon-btn:hover {
+        .btn-outline:hover {
             background: #f1f5f9;
         }
-        .delete-btn {
-            color: #dc2626;
+        .button-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .button-row .btn {
+            flex: 1;
+        }
+        .info-note {
+            background: #fef9e3;
+            padding: 16px 18px;
+            border-radius: 20px;
+            color: #92400e;
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-top: 20px;
+            border-left: 6px solid #f59e0b;
         }
         .export-buttons {
             display: flex;
             gap: 10px;
-            justify-content: stretch;
+            flex-wrap: wrap;
             margin-bottom: 16px;
-            flex-direction: row;
         }
-        .export-buttons button {
+        .export-buttons .btn {
             flex: 1;
-            padding: 12px;
-            font-size: 0.85rem;
+            min-width: 120px;
+            font-size: 1.1rem;
+            padding: 16px 12px;
         }
-        .stand-select-small {
-            padding: 6px 8px;
-            font-size: 0.7rem;
-            border-radius: 30px;
-            background-color: #f8fafc;
-            width: auto;
-            min-width: 85px;
+        .inventory-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
-        .marca-img-cell {
+        .inventory-item {
+            background: #f8fafc;
+            border-radius: 24px;
+            padding: 18px 16px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            position: relative;
+        }
+        .item-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .item-icon {
+            font-size: 2rem;
+            background: white;
+            width: 52px;
+            height: 52px;
             display: flex;
             align-items: center;
             justify-content: center;
-            min-width: 45px;
+            border-radius: 18px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
         }
-        .marca-img {
-            width: 36px;
-            height: 36px;
-            object-fit: contain;
-            border-radius: 10px;
-            background: #ffffff;
-            padding: 4px;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        .item-title {
+            font-weight: 700;
+            font-size: 1.2rem;
+            flex: 1;
+            line-height: 1.3;
         }
-        .contador-group, .serie-group {
-            width: 100%;
-        }
-        .info-note {
-            margin-top: 12px;
-            font-size: 0.7rem;
-            background: #fef9e3;
-            padding: 8px 12px;
-            border-radius: 14px;
-            color: #92400e;
-            line-height: 1.4;
-        }
-        .contador-badge {
-            background: #e0e7ff;
-            color: #3730a3;
-            padding: 3px 8px;
-            border-radius: 20px;
-            font-size: 0.65rem;
-            font-weight: 600;
-            display: inline-block;
-            white-space: nowrap;
-        }
-        .serie-badge {
-            background: #dcfce7;
-            color: #166534;
-            padding: 3px 8px;
-            border-radius: 20px;
-            font-size: 0.65rem;
-            font-weight: 600;
-            font-family: monospace;
-            display: inline-block;
-            word-break: break-all;
-            max-width: 120px;
-        }
-        .info-na {
-            color: #94a3b8;
-            font-style: italic;
-            font-size: 0.7rem;
-        }
-        .action-buttons-group {
+        .item-detail {
             display: flex;
             flex-wrap: wrap;
-            gap: 4px;
+            gap: 10px 16px;
+            font-size: 0.95rem;
+            color: #475569;
+            margin-bottom: 14px;
+            background: white;
+            padding: 12px 14px;
+            border-radius: 18px;
+        }
+        .item-detail span {
+            display: flex;
             align-items: center;
+            gap: 5px;
         }
-        .reset-btn {
-            background: #ef4444;
-            margin-top: 8px;
+        .badge {
+            background: #dbeafe;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #1e40af;
+            white-space: nowrap;
         }
-        .reset-btn:hover {
-            background: #dc2626;
+        .stock-control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            border-radius: 24px;
+            padding: 8px 12px;
+            gap: 12px;
+            margin-bottom: 14px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
         }
-        @media (min-width: 640px) {
-            body {
-                padding: 20px;
-            }
-            .card {
-                padding: 20px 24px;
-            }
-            .form-grid {
-                flex-direction: row;
-                flex-wrap: wrap;
-                align-items: flex-end;
-            }
-            .field-group {
-                width: auto;
-                min-width: 140px;
-                flex: 1 0 auto;
-            }
-            .contador-group, .serie-group {
-                width: auto;
-                min-width: 150px;
-            }
-            .table-wrapper {
-                border-radius: 20px;
-            }
-            th, td {
-                padding: 12px 10px;
-            }
-            .serie-badge {
-                max-width: none;
-            }
+        .stock-control button {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            border: none;
+            background: #e2e8f0;
+            font-size: 2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0f172a;
+            cursor: pointer;
+            transition: 0.1s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         }
-        @media (max-width: 480px) {
-            .stock-counter button {
-                width: 28px;
-                height: 28px;
-                font-size: 1rem;
-            }
-            .icon-btn {
-                padding: 4px 8px;
-            }
-            .stand-select-small {
-                padding: 4px 6px;
-                font-size: 0.65rem;
-                min-width: 70px;
-            }
-            .badge, .contador-badge, .serie-badge {
-                font-size: 0.6rem;
-                padding: 2px 6px;
-            }
-            .card-title {
-                font-size: 1.2rem;
-            }
+        .stock-control button:active {
+            transform: scale(0.92);
+        }
+        .stock-control .stock-number {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #0f172a;
+            min-width: 80px;
+            text-align: center;
+        }
+        .item-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .item-actions .btn {
+            flex: 1;
+            font-size: 1rem;
+            padding: 16px 12px;
+            min-width: 110px;
+        }
+        .stand-picker-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .stand-picker-modal.active {
+            display: flex;
+        }
+        .stand-picker-content {
+            background: white;
+            border-radius: 36px;
+            padding: 26px 20px;
+            max-width: 400px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .stand-picker-content h3 {
+            font-size: 1.6rem;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+        .stand-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 22px;
+        }
+        .stand-option {
+            background: #f1f5f9;
+            border: 3px solid transparent;
+            border-radius: 22px;
+            padding: 20px 8px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .stand-option.selected {
+            border-color: #3b82f6;
+            background: #dbeafe;
+        }
+        .empty-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: #64748b;
+            font-size: 1.2rem;
+            background: #f8fafc;
+            border-radius: 28px;
+        }
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 20px;
+            right: 20px;
+            background: #1e293b;
+            color: white;
+            padding: 18px 24px;
+            border-radius: 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 2000;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: 0.3s;
+            pointer-events: none;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        @media (max-width: 400px) {
+            .big-option .emoji { font-size: 3rem; }
+            .big-option .label { font-size: 1rem; }
+            .btn { font-size: 1.1rem; padding: 16px; }
+            .stock-control button { width: 50px; height: 50px; font-size: 1.8rem; }
+            .stock-control .stock-number { font-size: 1.8rem; }
+            .item-actions .btn { font-size: 0.9rem; padding: 14px 8px; }
         }
     </style>
 </head>
 <body>
 <div class="container">
+    <!-- PASOS -->
     <div class="card">
-        <div class="card-title">📦 Gestión de Inventario</div>
-        <div class="form-grid">
-            <div class="field-group">
-                <label>Tipo producto</label>
-                <select id="productType">
-                    <option value="fotocopiadora">🖨️ Fotocopiadora</option>
-                    <option value="toner">🧴 Tóner / Cartucho</option>
-                </select>
+        <div class="card-title">📦 Registrar producto</div>
+        <div class="step-indicator">
+            <div class="step active" id="step1Indicator"><span class="step-number">1</span> Tipo</div>
+            <div class="step" id="step2Indicator"><span class="step-number">2</span> Marca</div>
+            <div class="step" id="step3Indicator"><span class="step-number">3</span> Detalles</div>
+        </div>
+
+        <!-- Paso 1: Tipo de producto -->
+        <div id="step1" class="step-content active">
+            <div class="big-option-grid">
+                <div class="big-option" data-type="fotocopiadora" id="optFotocopiadora">
+                    <span class="emoji">🖨️</span>
+                    <span class="label">Fotocopiadora</span>
+                    <small>Equipo completo</small>
+                </div>
+                <div class="big-option" data-type="toner" id="optToner">
+                    <span class="emoji">🧴</span>
+                    <span class="label">Tóner / Cartucho</span>
+                    <small>Consumible</small>
+                </div>
             </div>
+            <div class="button-row">
+                <button class="btn btn-primary" id="nextStep1" disabled>Continuar ➡️</button>
+            </div>
+        </div>
+
+        <!-- Paso 2: Marca y modelo -->
+        <div id="step2" class="step-content">
             <div class="field-group">
-                <label>Marca *</label>
-                <select id="marcaSelect" style="font-weight: 500;">
+                <label>🏷️ Marca</label>
+                <select id="marcaSelect">
                     <option value="Ricoh">RICOH</option>
                     <option value="Canon">CANON</option>
                     <option value="Konica Minolta">KONICA MINOLTA</option>
                 </select>
             </div>
             <div class="field-group">
-                <label>Modelo</label>
-                <input type="text" id="modelo" placeholder="Ej: MP 4055, iR-ADV C555" autocomplete="off">
+                <label>📋 Modelo</label>
+                <input type="text" id="modeloInput" placeholder="Ej: MP 4055, iR-ADV C555" autocomplete="off">
             </div>
+            <div class="button-row">
+                <button class="btn btn-secondary" id="backStep2">⬅️ Atrás</button>
+                <button class="btn btn-primary" id="nextStep2">Continuar ➡️</button>
+            </div>
+        </div>
+
+        <!-- Paso 3: Detalles específicos -->
+        <div id="step3" class="step-content">
+            <!-- Campos para fotocopiadora -->
+            <div id="fotocopiadoraFields">
+                <div class="field-group">
+                    <label>🔢 Número de Serie</label>
+                    <input type="text" id="numeroSerieInput" placeholder="Ej: RIC-12345" autocomplete="off">
+                </div>
+                <div class="field-group">
+                    <label>📟 Contador (copias/páginas)</label>
+                    <input type="number" id="contadorInput" value="0" min="0" step="100" placeholder="Ej: 12500">
+                </div>
+            </div>
+            <!-- Campos para tóner -->
+            <div id="tonerFields" style="display:none;">
+                <div class="field-group">
+                    <label>🧴 Cantidad de unidades</label>
+                    <input type="number" id="cantidadTonersInput" value="1" min="1" step="1" placeholder="Número de tóneres">
+                </div>
+            </div>
+            <!-- Stand (común) -->
             <div class="field-group">
-                <label>Stand</label>
+                <label>📍 Stand</label>
                 <select id="standSelect">
                     <option value="104">Stand 104</option>
                     <option value="105">Stand 105</option>
@@ -378,100 +536,111 @@
                     <option value="135">Stand 135</option>
                 </select>
             </div>
-            <!-- Campos específicos para Fotocopiadora -->
-            <div id="fotocopiadoraFields" style="display: none; width: 100%;">
-                <div class="field-group serie-group">
-                    <label>🔢 Número de Serie</label>
-                    <input type="text" id="numeroSerie" placeholder="Ej: RIC-12345, CN-67890" autocomplete="off">
-                </div>
-                <div class="contador-group">
-                    <label>📟 Contador (copias/páginas)</label>
-                    <input type="number" id="contadorInicial" value="0" min="0" step="100" placeholder="Ej: 12500">
-                </div>
-            </div>
-            <!-- Campos específicos para Tóner (solo cantidad de unidades, sin cajas) -->
-            <div id="tonerFields" style="display: none; width: 100%;">
-                <div class="field-group">
-                    <label>🧴 Cantidad de unidades</label>
-                    <input type="number" id="cantidadToners" value="1" min="1" step="1" placeholder="Número de tóneres">
-                </div>
-            </div>
-            <div class="field-group">
-                <label>&nbsp;</label>
-                <button id="agregarBtn">➕ Agregar / Acumular stock</button>
+            <div class="button-row">
+                <button class="btn btn-secondary" id="backStep3">⬅️ Atrás</button>
+                <button class="btn btn-success" id="guardarProductoBtn">✅ Guardar producto</button>
             </div>
         </div>
+
         <div class="info-note">
-            💾 <strong>Base de datos local:</strong> Los datos se guardan automáticamente. Al recargar la página se mantiene el inventario.<br>
-            🔁 <strong>Cambiar stand:</strong> usa el desplegable junto a cada producto. 🗑️ <strong>Eliminar</strong> para borrar.<br>
-            🔢 <strong>Fotocopiadoras:</strong> se identifican por NÚMERO DE SERIE único. Cada vez que agregas, suma 1 unidad.<br>
-            🧴 <strong>Tóneres:</strong> ahora se agregan directamente por cantidad de unidades.
+            💾 <strong>Se guarda solo.</strong> Si cierras la página, no pierdes los datos.<br>
+            🔁 Para cambiar de stand, usa el botón <strong>📍 Cambiar stand</strong> en cada producto.
         </div>
     </div>
 
+    <!-- BOTONES DE EXPORTAR -->
     <div class="export-buttons">
-        <button id="exportExcelBtn" class="btn-success">📎 Excel</button>
-        <button id="exportPdfBtn" class="btn-success">📄 PDF</button>
-        <button id="resetStorageBtn" class="btn-secondary">🗑️ Reiniciar datos</button>
+        <button class="btn btn-success" id="exportExcelBtn">📎 Excel</button>
+        <button class="btn btn-success" id="exportPdfBtn">📄 PDF</button>
+        <button class="btn btn-secondary" id="resetStorageBtn">🗑️ Borrar todo</button>
     </div>
 
+    <!-- INVENTARIO -->
     <div class="card">
         <div class="card-title">📋 Inventario actual</div>
-        <div class="table-wrapper">
-            <table id="inventoryTable">
-                <thead id="tableHeader">
-                    <tr id="headerRow">
-                        <th>Tipo</th>
-                        <th>Marca</th>
-                        <th>Modelo</th>
-                        <th>Serie / Ref</th>
-                        <th>Stand</th>
-                        <th>Stock</th>
-                        <th>Contador</th>
-                        <th>Ajuste</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody">
-                    <tr class="empty-row"><td colspan="9">No hay productos registrados. Agrega fotocopiadoras o tóner.</td></tr>
-                </tbody>
-            </table>
+        <div id="inventoryContainer" class="inventory-list">
+            <!-- Aquí se generan los items -->
         </div>
     </div>
 </div>
 
+<!-- Modal para elegir stand -->
+<div class="stand-picker-modal" id="standPickerModal">
+    <div class="stand-picker-content">
+        <h3>📍 Elige el nuevo stand</h3>
+        <div class="stand-grid" id="standGrid">
+            <!-- Se llena con JS -->
+        </div>
+        <button class="btn btn-secondary" id="closeStandPicker">Cancelar</button>
+    </div>
+</div>
+
+<!-- Toast de notificación -->
+<div class="toast" id="toast"></div>
+
 <script>
+    // ==================== DATOS ====================
     let productos = [];
     let nextId = 1;
     const STANDS_VALIDOS = ["104", "105", "106", "108", "109", "121", "134", "135"];
-    const STORAGE_KEY = 'inventario_fotocopiadoras';
-    
-    const MARCA_IMAGENES = {
-        "Ricoh": "https://1000marcas.net/wp-content/uploads/2020/03/Ricoh-logo.jpg",
-        "Canon": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSV8VCg7OUsGJKa9f_vaDyeBsQ8WTfuTKKCuQ&s",
-        "Konica Minolta": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRb2AEC17FI7SlBiMWUehWVZRyumT7pif1TJA&s"
-    };
-    
-    function getMarcaImageHTML(marca) {
-        const imgUrl = MARCA_IMAGENES[marca];
-        if (!imgUrl) return `<div class="marca-img-cell" style="min-width:40px;"></div>`;
-        return `<div class="marca-img-cell">
-                    <img class="marca-img" src="${imgUrl}" alt="${marca}" 
-                         style="width:36px; height:36px; object-fit:contain; background:white; border-radius:10px; padding:4px;"
-                         onerror="this.onerror=null; this.style.display='none';">
-                </div>`;
+    const STORAGE_KEY = 'inventario_fotocopiadoras_v2';
+
+    // ==================== ESTADO DEL ASISTENTE ====================
+    let currentStep = 1;
+    let selectedType = null; // 'fotocopiadora' o 'toner'
+
+    // ==================== ELEMENTOS ====================
+    const step1 = document.getElementById('step1');
+    const step2 = document.getElementById('step2');
+    const step3 = document.getElementById('step3');
+    const step1Indicator = document.getElementById('step1Indicator');
+    const step2Indicator = document.getElementById('step2Indicator');
+    const step3Indicator = document.getElementById('step3Indicator');
+    const optFotocopiadora = document.getElementById('optFotocopiadora');
+    const optToner = document.getElementById('optToner');
+    const nextStep1 = document.getElementById('nextStep1');
+    const backStep2 = document.getElementById('backStep2');
+    const nextStep2 = document.getElementById('nextStep2');
+    const backStep3 = document.getElementById('backStep3');
+    const guardarProductoBtn = document.getElementById('guardarProductoBtn');
+
+    const marcaSelect = document.getElementById('marcaSelect');
+    const modeloInput = document.getElementById('modeloInput');
+    const numeroSerieInput = document.getElementById('numeroSerieInput');
+    const contadorInput = document.getElementById('contadorInput');
+    const cantidadTonersInput = document.getElementById('cantidadTonersInput');
+    const standSelect = document.getElementById('standSelect');
+    const fotocopiadoraFields = document.getElementById('fotocopiadoraFields');
+    const tonerFields = document.getElementById('tonerFields');
+
+    const inventoryContainer = document.getElementById('inventoryContainer');
+    const exportExcelBtn = document.getElementById('exportExcelBtn');
+    const exportPdfBtn = document.getElementById('exportPdfBtn');
+    const resetStorageBtn = document.getElementById('resetStorageBtn');
+
+    const standPickerModal = document.getElementById('standPickerModal');
+    const standGrid = document.getElementById('standGrid');
+    const closeStandPicker = document.getElementById('closeStandPicker');
+
+    const toastEl = document.getElementById('toast');
+
+    // ==================== UTILIDADES ====================
+    function showToast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add('show');
+        setTimeout(() => toastEl.classList.remove('show'), 2500);
     }
 
-    // Guardar en localStorage
-    function guardarEnStorage() {
-        const dataToSave = {
-            productos: productos,
-            nextId: nextId
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m]));
     }
-    
-    // Cargar desde localStorage
+
+    // ==================== PERSISTENCIA ====================
+    function guardarEnStorage() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ productos, nextId }));
+    }
+
     function cargarDesdeStorage() {
         const data = localStorage.getItem(STORAGE_KEY);
         if (data) {
@@ -479,275 +648,343 @@
                 const parsed = JSON.parse(data);
                 productos = parsed.productos || [];
                 nextId = parsed.nextId || 1;
-                return true;
-            } catch(e) {
-                console.error("Error al cargar datos:", e);
-                return false;
-            }
+            } catch(e) { console.error(e); }
         }
-        return false;
     }
-    
-    // Reiniciar todos los datos
+
     function reiniciarDatos() {
-        if (confirm("⚠️ ¿Estás seguro de que quieres REINICIAR todos los datos? Se perderá todo el inventario actual.")) {
+        if (confirm("⚠️ ¿Borrar TODOS los datos? Esta acción no se puede deshacer.")) {
             productos = [];
             nextId = 1;
             localStorage.removeItem(STORAGE_KEY);
-            renderizarTabla();
-            alert("✅ Datos reiniciados correctamente.");
+            renderizarInventario();
+            showToast("✅ Datos borrados");
         }
     }
 
-    const productTypeSelect = document.getElementById('productType');
-    const tonerFieldsDiv = document.getElementById('tonerFields');
-    const fotocopiadoraFieldsDiv = document.getElementById('fotocopiadoraFields');
-    const contadorInicialInput = document.getElementById('contadorInicial');
-    const numeroSerieInput = document.getElementById('numeroSerie');
-    const marcaSelect = document.getElementById('marcaSelect');
-    const modeloInput = document.getElementById('modelo');
-    const standSelect = document.getElementById('standSelect');
-    const cantidadTonersInput = document.getElementById('cantidadToners');
-    const agregarBtn = document.getElementById('agregarBtn');
-    const tableBody = document.getElementById('tableBody');
-    const exportExcelBtn = document.getElementById('exportExcelBtn');
-    const exportPdfBtn = document.getElementById('exportPdfBtn');
-    const resetStorageBtn = document.getElementById('resetStorageBtn');
-
-    function toggleFieldsByType() {
-        const tipo = productTypeSelect.value;
-        if (tipo === 'fotocopiadora') {
-            tonerFieldsDiv.style.display = 'none';
-            fotocopiadoraFieldsDiv.style.display = 'flex';
-            fotocopiadoraFieldsDiv.style.flexWrap = 'wrap';
-            fotocopiadoraFieldsDiv.style.gap = '12px';
-        } else {
-            fotocopiadoraFieldsDiv.style.display = 'none';
-            tonerFieldsDiv.style.display = 'flex';
-            tonerFieldsDiv.style.flexWrap = 'wrap';
-            tonerFieldsDiv.style.gap = '12px';
-            contadorInicialInput.value = "0";
-            numeroSerieInput.value = "";
-        }
-    }
-    productTypeSelect.addEventListener('change', toggleFieldsByType);
-    toggleFieldsByType();
-
+    // ==================== LÓGICA DE BÚSQUEDA ====================
     function findExistingFotocopiadora(marca, modelo, serie, stand) {
         return productos.find(p => p.tipo === 'fotocopiadora' && p.marca === marca && p.modelo === modelo && p.serie === serie && p.stand === stand);
     }
-    
-    function findExistingToner(tipo, marca, modelo, stand) {
-        if (tipo !== 'toner') return null;
+
+    function findExistingToner(marca, modelo, stand) {
         return productos.find(p => p.tipo === 'toner' && p.marca === marca && p.modelo === modelo && p.stand === stand);
     }
 
-    function agregarProducto() {
-        const tipo = productTypeSelect.value;
+    // ==================== ASISTENTE POR PASOS ====================
+    function updateStepUI() {
+        // Ocultar todos los pasos
+        step1.classList.remove('active');
+        step2.classList.remove('active');
+        step3.classList.remove('active');
+        step1Indicator.classList.remove('active', 'completed');
+        step2Indicator.classList.remove('active', 'completed');
+        step3Indicator.classList.remove('active', 'completed');
+
+        if (currentStep === 1) {
+            step1.classList.add('active');
+            step1Indicator.classList.add('active');
+        } else if (currentStep === 2) {
+            step2.classList.add('active');
+            step1Indicator.classList.add('completed');
+            step2Indicator.classList.add('active');
+        } else if (currentStep === 3) {
+            step3.classList.add('active');
+            step1Indicator.classList.add('completed');
+            step2Indicator.classList.add('completed');
+            step3Indicator.classList.add('active');
+            // Ajustar campos según tipo
+            if (selectedType === 'fotocopiadora') {
+                fotocopiadoraFields.style.display = 'block';
+                tonerFields.style.display = 'none';
+            } else {
+                fotocopiadoraFields.style.display = 'none';
+                tonerFields.style.display = 'block';
+            }
+        }
+    }
+
+    // Paso 1: seleccionar tipo
+    optFotocopiadora.addEventListener('click', () => {
+        selectedType = 'fotocopiadora';
+        optFotocopiadora.classList.add('selected');
+        optToner.classList.remove('selected');
+        nextStep1.disabled = false;
+    });
+    optToner.addEventListener('click', () => {
+        selectedType = 'toner';
+        optToner.classList.add('selected');
+        optFotocopiadora.classList.remove('selected');
+        nextStep1.disabled = false;
+    });
+
+    nextStep1.addEventListener('click', () => {
+        if (!selectedType) return;
+        currentStep = 2;
+        updateStepUI();
+    });
+
+    // Paso 2: marca y modelo
+    backStep2.addEventListener('click', () => {
+        currentStep = 1;
+        updateStepUI();
+    });
+
+    nextStep2.addEventListener('click', () => {
+        const modelo = modeloInput.value.trim();
+        if (!modelo) {
+            showToast("⚠️ Escribe el modelo");
+            return;
+        }
+        currentStep = 3;
+        updateStepUI();
+    });
+
+    // Paso 3: detalles
+    backStep3.addEventListener('click', () => {
+        currentStep = 2;
+        updateStepUI();
+    });
+
+    guardarProductoBtn.addEventListener('click', () => {
         const marca = marcaSelect.value;
-        let modelo = modeloInput.value.trim();
-        if (modelo === "") { 
-            alert("Por favor ingresa el modelo."); 
-            return; 
+        const modelo = modeloInput.value.trim();
+        if (!modelo) {
+            showToast("⚠️ Escribe el modelo");
+            return;
         }
         const stand = standSelect.value;
-        
-        if (tipo === 'fotocopiadora') {
-            let serie = numeroSerieInput.value.trim();
-            if (serie === "") { 
-                alert("Por favor ingresa el número de serie de la fotocopiadora."); 
-                return; 
+
+        if (selectedType === 'fotocopiadora') {
+            const serie = numeroSerieInput.value.trim();
+            if (!serie) {
+                showToast("⚠️ Escribe el número de serie");
+                return;
             }
-            const cantidad = 1; // Siempre suma 1 unidad por cada fotocopiadora
-            let contadorVal = parseInt(contadorInicialInput.value);
+            let contadorVal = parseInt(contadorInput.value);
             if (isNaN(contadorVal)) contadorVal = 0;
-            
+
             const existente = findExistingFotocopiadora(marca, modelo, serie, stand);
             if (existente) {
-                existente.stockTotal += cantidad;
-                if (contadorVal > existente.contador) {
-                    existente.contador = contadorVal;
-                }
+                existente.stockTotal += 1;
+                if (contadorVal > existente.contador) existente.contador = contadorVal;
+                showToast("✅ Stock sumado +1");
             } else {
                 productos.push({
                     id: nextId++,
                     tipo: 'fotocopiadora',
-                    marca,
-                    modelo,
-                    serie,
-                    stand,
-                    stockTotal: cantidad,
+                    marca, modelo, serie, stand,
+                    stockTotal: 1,
                     contador: contadorVal
                 });
+                showToast("✅ Fotocopiadora agregada");
             }
-            numeroSerieInput.value = "";
-            contadorInicialInput.value = "0";
-        } 
-        else { // Tóner - ahora directamente por unidades
-            let cantidadUnidades = parseInt(cantidadTonersInput.value) || 1;
-            if (cantidadUnidades <= 0) { 
-                alert("Debe haber al menos una unidad."); 
-                return; 
-            }
-            
-            const existente = findExistingToner('toner', marca, modelo, stand);
+            numeroSerieInput.value = '';
+            contadorInput.value = '0';
+        } else {
+            let cantidad = parseInt(cantidadTonersInput.value) || 1;
+            if (cantidad <= 0) cantidad = 1;
+
+            const existente = findExistingToner(marca, modelo, stand);
             if (existente) {
-                existente.stockTotal += cantidadUnidades;
+                existente.stockTotal += cantidad;
+                showToast(`✅ Stock sumado +${cantidad}`);
             } else {
                 productos.push({
                     id: nextId++,
                     tipo: 'toner',
-                    marca,
-                    modelo,
-                    stand,
-                    stockTotal: cantidadUnidades
+                    marca, modelo, stand,
+                    stockTotal: cantidad
                 });
+                showToast(`✅ Tóner agregado (${cantidad} uds)`);
             }
-            cantidadTonersInput.value = "1";
+            cantidadTonersInput.value = '1';
         }
-        
-        modeloInput.value = "";
+
+        // Reiniciar asistente
+        modeloInput.value = '';
+        selectedType = null;
+        optFotocopiadora.classList.remove('selected');
+        optToner.classList.remove('selected');
+        nextStep1.disabled = true;
+        currentStep = 1;
+        updateStepUI();
+
         guardarEnStorage();
-        renderizarTabla();
-    }
+        renderizarInventario();
+    });
 
-    function cambiarStandConListbox(idProducto, selectElement) {
-        const nuevoStand = selectElement.value;
-        if (!STANDS_VALIDOS.includes(nuevoStand)) { alert("Stand no válido."); return; }
-        const producto = productos.find(p => p.id === idProducto);
-        if (!producto || producto.stand === nuevoStand) return;
-        
-        let colision = null;
-        if (producto.tipo === 'fotocopiadora') {
-            colision = findExistingFotocopiadora(producto.marca, producto.modelo, producto.serie, nuevoStand);
-        } else {
-            colision = findExistingToner('toner', producto.marca, producto.modelo, nuevoStand);
-        }
-        
-        if (colision) {
-            if (confirm(`⚠️ Ya existe en Stand ${nuevoStand} con stock ${colision.stockTotal}. ¿Fusionar?`)) {
-                colision.stockTotal += producto.stockTotal;
-                if (producto.tipo === 'fotocopiadora' && (producto.contador || 0) > (colision.contador || 0)) {
-                    colision.contador = producto.contador;
-                }
-                productos = productos.filter(p => p.id !== producto.id);
-                guardarEnStorage();
-                renderizarTabla();
-            } else { 
-                selectElement.value = producto.stand; 
-            }
-        } else {
-            producto.stand = nuevoStand;
-            guardarEnStorage();
-            renderizarTabla();
-        }
-    }
-
-    function eliminarProducto(idProducto) {
-        const producto = productos.find(p => p.id === idProducto);
-        if (producto && confirm(`¿Eliminar ${producto.tipo === 'fotocopiadora' ? 'fotocopiadora' : 'tóner'} "${producto.marca} ${producto.modelo}"${producto.serie ? ' (Serie: ' + producto.serie + ')' : ''}?`)) {
-            productos = productos.filter(p => p.id !== idProducto);
-            guardarEnStorage();
-            renderizarTabla();
-        }
-    }
-
-    function ajustarStock(idProducto, delta) {
-        const producto = productos.find(p => p.id === idProducto);
-        if (!producto) return;
-        let nuevo = producto.stockTotal + delta;
-        if (nuevo < 0) {
-            if (confirm(`Stock actual ${producto.stockTotal}. ¿Eliminar este producto por falta de stock?`)) {
-                eliminarProducto(idProducto);
-            }
-            return;
-        }
-        producto.stockTotal = nuevo;
-        guardarEnStorage();
-        
-        if (producto.stockTotal === 0) {
-            setTimeout(() => {
-                if (confirm(`"${producto.marca} ${producto.modelo}"${producto.serie ? ' Serie: ' + producto.serie : ''} está agotado. ¿Eliminar?`)) {
-                    eliminarProducto(producto.id);
-                }
-            }, 50);
-        }
-        renderizarTabla();
-    }
-
-    function renderizarTabla() {
+    // ==================== RENDERIZAR INVENTARIO ====================
+    function renderizarInventario() {
         if (productos.length === 0) {
-            tableBody.innerHTML = `<tr class="empty-row"><td colspan="9">No hay productos registrados. Agrega fotocopiadoras o tóner.</td></tr>`;
+            inventoryContainer.innerHTML = `<div class="empty-message">📭 No hay productos todavía.<br>Usa el asistente de arriba para agregar.</div>`;
             return;
         }
-        
+
         let html = '';
         for (const prod of productos) {
-            const standOptions = STANDS_VALIDOS.map(s => `<option value="${s}" ${prod.stand === s ? 'selected' : ''}>Stand ${s}</option>`).join('');
-            
-            let serieReferencia = '';
-            let contadorDisplay = '';
-            
-            if (prod.tipo === 'fotocopiadora') {
-                serieReferencia = `<span class="serie-badge" title="${escapeHtml(prod.serie)}">🔢 ${escapeHtml(prod.serie.length > 18 ? prod.serie.substring(0,16)+'…' : prod.serie)}</span>`;
-                contadorDisplay = `<span class="contador-badge">📟 ${(prod.contador || 0).toLocaleString()}</span>`;
-            } else {
-                serieReferencia = `<span class="info-na">—</span>`;
-                contadorDisplay = `<span class="info-na">—</span>`;
-            }
-            
-            html += `<tr>
-                        <td>${prod.tipo === 'fotocopiadora' ? '🖨️ Foto' : '🧴 Tóner'}</td>
-                        <td>${getMarcaImageHTML(prod.marca)}</td>
-                        <td><strong>${escapeHtml(prod.modelo)}</strong></td>
-                        <td>${serieReferencia}</td>
-                        <td><span class="badge" style="background:#dbeafe;">St ${prod.stand}</span></td>
-                        <td>${prod.stockTotal} uds</td>
-                        <td>${contadorDisplay}</td>
-                        <td><div class="stock-counter">
-                            <button class="decrement-btn" data-id="${prod.id}" data-delta="-1">−</button>
-                            <span class="stock-value">${prod.stockTotal}</span>
-                            <button class="increment-btn" data-id="${prod.id}" data-delta="1">+</button>
-                            <button class="decrement5-btn" data-id="${prod.id}" data-delta="-5">-5</button>
-                        </div></td>
-                        <td><div class="action-buttons-group">
-                            <select class="stand-select-small" data-id="${prod.id}">${standOptions}</select>
-                            <button class="icon-btn apply-stand-btn" data-id="${prod.id}" title="Cambiar stand">✅</button>
-                            <button class="icon-btn delete-btn" data-id="${prod.id}" title="Eliminar">🗑️</button>
-                        </div></td>
-                     </tr>`;
+            const esFoto = prod.tipo === 'fotocopiadora';
+            const icono = esFoto ? '🖨️' : '🧴';
+            const titulo = `${prod.marca} ${prod.modelo}`;
+
+            let detalles = `
+                <span>📍 Stand ${prod.stand}</span>
+                ${esFoto ? `<span>🔢 ${escapeHtml(prod.serie)}</span>` : ''}
+                ${esFoto ? `<span>📟 ${(prod.contador || 0).toLocaleString()} copias</span>` : ''}
+            `;
+
+            html += `
+                <div class="inventory-item" data-id="${prod.id}">
+                    <div class="item-header">
+                        <div class="item-icon">${icono}</div>
+                        <div class="item-title">${escapeHtml(titulo)}</div>
+                    </div>
+                    <div class="item-detail">
+                        ${detalles}
+                    </div>
+                    <div class="stock-control">
+                        <button class="decrement-btn" data-id="${prod.id}" data-delta="-1">−</button>
+                        <span class="stock-number">${prod.stockTotal}</span>
+                        <button class="increment-btn" data-id="${prod.id}" data-delta="1">+</button>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn btn-outline change-stand-btn" data-id="${prod.id}">📍 Cambiar stand</button>
+                        <button class="btn btn-danger delete-btn" data-id="${prod.id}">🗑️ Eliminar</button>
+                    </div>
+                </div>
+            `;
         }
-        
-        tableBody.innerHTML = html;
-        
-        document.querySelectorAll('.decrement-btn, .increment-btn, .decrement5-btn').forEach(btn => {
+        inventoryContainer.innerHTML = html;
+
+        // Eventos de botones + y -
+        document.querySelectorAll('.decrement-btn, .increment-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                ajustarStock(parseInt(btn.dataset.id), parseInt(btn.dataset.delta));
-            });
-        });
-        document.querySelectorAll('.apply-stand-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
                 const id = parseInt(btn.dataset.id);
-                const select = btn.closest('tr').querySelector('.stand-select-small');
-                if (select) cambiarStandConListbox(id, select);
+                const delta = parseInt(btn.dataset.delta);
+                ajustarStock(id, delta);
             });
         });
+
+        // Evento eliminar
         document.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => eliminarProducto(parseInt(btn.dataset.id)));
+            btn.addEventListener('click', () => {
+                const id = parseInt(btn.dataset.id);
+                eliminarProducto(id);
+            });
+        });
+
+        // Evento cambiar stand
+        document.querySelectorAll('.change-stand-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = parseInt(btn.dataset.id);
+                abrirStandPicker(id);
+            });
         });
     }
 
-    function escapeHtml(str) { 
-        if(!str) return '';
-        return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); 
+    function ajustarStock(id, delta) {
+        const prod = productos.find(p => p.id === id);
+        if (!prod) return;
+        const nuevo = prod.stockTotal + delta;
+        if (nuevo < 0) {
+            if (confirm(`Stock actual ${prod.stockTotal}. ¿Eliminar producto?`)) {
+                eliminarProducto(id);
+            }
+            return;
+        }
+        prod.stockTotal = nuevo;
+        guardarEnStorage();
+        renderizarInventario();
+        if (prod.stockTotal === 0) {
+            setTimeout(() => {
+                if (confirm(`"${prod.marca} ${prod.modelo}" está agotado. ¿Eliminar?`)) {
+                    eliminarProducto(prod.id);
+                }
+            }, 100);
+        }
     }
 
+    function eliminarProducto(id) {
+        const prod = productos.find(p => p.id === id);
+        if (!prod) return;
+        if (confirm(`¿Eliminar "${prod.marca} ${prod.modelo}"${prod.serie ? ' (Serie: ' + prod.serie + ')' : ''}?`)) {
+            productos = productos.filter(p => p.id !== id);
+            guardarEnStorage();
+            renderizarInventario();
+            showToast("🗑️ Producto eliminado");
+        }
+    }
+
+    // ==================== MODAL DE STAND ====================
+    let standPickerProductId = null;
+
+    function abrirStandPicker(id) {
+        const prod = productos.find(p => p.id === id);
+        if (!prod) return;
+        standPickerProductId = id;
+        // Generar opciones de stand
+        standGrid.innerHTML = STANDS_VALIDOS.map(s => `
+            <div class="stand-option ${prod.stand === s ? 'selected' : ''}" data-stand="${s}">Stand ${s}</div>
+        `).join('');
+
+        standPickerModal.classList.add('active');
+
+        // Eventos de selección
+        document.querySelectorAll('.stand-option').forEach(el => {
+            el.addEventListener('click', () => {
+                const nuevoStand = el.dataset.stand;
+                cambiarStand(standPickerProductId, nuevoStand);
+                cerrarStandPicker();
+            });
+        });
+    }
+
+    function cerrarStandPicker() {
+        standPickerModal.classList.remove('active');
+        standPickerProductId = null;
+    }
+
+    function cambiarStand(id, nuevoStand) {
+        const prod = productos.find(p => p.id === id);
+        if (!prod || prod.stand === nuevoStand) return;
+
+        let colision = null;
+        if (prod.tipo === 'fotocopiadora') {
+            colision = findExistingFotocopiadora(prod.marca, prod.modelo, prod.serie, nuevoStand);
+        } else {
+            colision = findExistingToner(prod.marca, prod.modelo, nuevoStand);
+        }
+
+        if (colision) {
+            if (confirm(`⚠️ Ya existe en Stand ${nuevoStand} (stock ${colision.stockTotal}). ¿Fusionar?`)) {
+                colision.stockTotal += prod.stockTotal;
+                if (prod.tipo === 'fotocopiadora' && (prod.contador || 0) > (colision.contador || 0)) {
+                    colision.contador = prod.contador;
+                }
+                productos = productos.filter(p => p.id !== id);
+                guardarEnStorage();
+                renderizarInventario();
+                showToast("🔀 Productos fusionados");
+            }
+        } else {
+            prod.stand = nuevoStand;
+            guardarEnStorage();
+            renderizarInventario();
+            showToast(`📍 Stand cambiado a ${nuevoStand}`);
+        }
+    }
+
+    closeStandPicker.addEventListener('click', cerrarStandPicker);
+    standPickerModal.addEventListener('click', (e) => {
+        if (e.target === standPickerModal) cerrarStandPicker();
+    });
+
+    // ==================== EXPORTAR ====================
     function exportToExcel() {
-        if (productos.length === 0) { alert("No hay datos para exportar."); return; }
+        if (productos.length === 0) { showToast("No hay datos"); return; }
         const wb = XLSX.utils.book_new();
-        
-        const headers = ["Tipo", "Marca", "Modelo", "Serie (solo fotocopiadora)", "Stand", "Stock (Unidades)", "Contador (copias)", "Estado"];
+        const headers = ["Tipo", "Marca", "Modelo", "Serie", "Stand", "Stock", "Contador", "Estado"];
         const rows = productos.map(p => [
             p.tipo === 'fotocopiadora' ? 'Fotocopiadora' : 'Tóner',
             p.marca,
@@ -758,32 +995,17 @@
             p.tipo === 'fotocopiadora' ? (p.contador || 0).toLocaleString() : '---',
             p.stockTotal === 0 ? 'AGOTADO' : 'Disponible'
         ]);
-        
-        const sheetData = [headers, ...rows];
-        const ws = XLSX.utils.aoa_to_sheet(sheetData);
-        ws['!cols'] = [{ wch: 18 }, { wch: 22 }, { wch: 35 }, { wch: 25 }, { wch: 12 }, { wch: 15 }, { wch: 18 }, { wch: 14 }];
-        
-        const finalSheetData = [
-            [`INVENTARIO DE FOTOCOPIADORAS Y TÓNER`],
-            [`Fecha: ${new Date().toLocaleString()}`],
-            [`Total de productos: ${productos.length}`],
-            [], 
-            ...sheetData
-        ];
-        const finalWs = XLSX.utils.aoa_to_sheet(finalSheetData);
-        finalWs['!cols'] = [{ wch: 25 }, { wch: 22 }, { wch: 35 }, { wch: 25 }, { wch: 12 }, { wch: 15 }, { wch: 18 }, { wch: 14 }];
-        if (!finalWs['!merges']) finalWs['!merges'] = [];
-        finalWs['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } });
-        XLSX.utils.book_append_sheet(wb, finalWs, "Inventario");
-        
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+        ws['!cols'] = [{ wch: 18 }, { wch: 22 }, { wch: 35 }, { wch: 25 }, { wch: 12 }, { wch: 10 }, { wch: 18 }, { wch: 14 }];
+        XLSX.utils.book_append_sheet(wb, ws, "Inventario");
         XLSX.writeFile(wb, `inventario_${new Date().toISOString().slice(0,19)}.xlsx`);
     }
 
     async function exportToPDF() {
-        if (productos.length === 0) { alert("No hay registros."); return; }
+        if (productos.length === 0) { showToast("No hay registros"); return; }
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-        
+
         const tableColumn = ["Tipo", "Marca", "Modelo", "Serie", "Stand", "Stock", "Contador", "Estado"];
         const tableRows = productos.map(p => [
             p.tipo === 'fotocopiadora' ? 'Fotocopiadora' : 'Tóner',
@@ -795,41 +1017,32 @@
             p.tipo === 'fotocopiadora' ? (p.contador || 0).toLocaleString() : '---',
             p.stockTotal === 0 ? 'AGOTADO' : 'En stock'
         ]);
-        
+
         doc.setFontSize(16);
-        doc.text("Reporte de Inventario - Fotocopiadoras y Tóner", 14, 20);
+        doc.text("Reporte de Inventario", 14, 20);
         doc.setFontSize(10);
         doc.text(`Generado: ${new Date().toLocaleString()}`, 14, 30);
-        doc.text(`Total de productos: ${productos.length}`, 14, 37);
-        
+        doc.text(`Total: ${productos.length} productos`, 14, 37);
+
         doc.autoTable({
-            head: [tableColumn], 
-            body: tableRows, 
-            startY: 45, 
+            head: [tableColumn],
+            body: tableRows,
+            startY: 45,
             theme: 'striped',
             headStyles: { fillColor: [41, 112, 165], textColor: 255, fontSize: 8, fontStyle: 'bold' },
-            bodyStyles: { fontSize: 7 }, 
-            columnStyles: { 
-                0: { cellWidth: 26 }, 
-                1: { cellWidth: 26 }, 
-                2: { cellWidth: 36 }, 
-                3: { cellWidth: 28 }, 
-                4: { cellWidth: 16 }, 
-                5: { cellWidth: 14 }, 
-                6: { cellWidth: 22 }, 
-                7: { cellWidth: 16 } 
-            },
-            alternateRowStyles: { fillColor: [240, 248, 255] }, 
+            bodyStyles: { fontSize: 7 },
+            columnStyles: { 0: { cellWidth: 26 }, 1: { cellWidth: 26 }, 2: { cellWidth: 36 }, 3: { cellWidth: 28 }, 4: { cellWidth: 16 }, 5: { cellWidth: 14 }, 6: { cellWidth: 22 }, 7: { cellWidth: 16 } },
+            alternateRowStyles: { fillColor: [240, 248, 255] },
             margin: { left: 6, right: 6 }
         });
         doc.save(`inventario_${new Date().toISOString().slice(0,19)}.pdf`);
     }
 
-    // Inicializar: cargar datos guardados y luego renderizar
+    // ==================== INICIALIZACIÓN ====================
     cargarDesdeStorage();
-    renderizarTabla();
-    
-    agregarBtn.addEventListener('click', agregarProducto);
+    renderizarInventario();
+    updateStepUI();
+
     exportExcelBtn.addEventListener('click', exportToExcel);
     exportPdfBtn.addEventListener('click', exportToPDF);
     resetStorageBtn.addEventListener('click', reiniciarDatos);
