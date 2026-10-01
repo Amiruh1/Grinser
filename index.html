@@ -253,6 +253,53 @@
             font-size: 1.1rem;
             padding: 16px 12px;
         }
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 24px;
+            padding: 4px 16px 4px 8px;
+            margin-bottom: 20px;
+            transition: 0.2s;
+        }
+        .search-box:focus-within {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 5px rgba(59,130,246,0.12);
+            background: white;
+        }
+        .search-box .search-icon {
+            font-size: 1.6rem;
+            padding: 10px;
+            color: #64748b;
+        }
+        .search-box input {
+            border: none;
+            background: transparent;
+            padding: 16px 0;
+            font-size: 1.2rem;
+            box-shadow: none;
+        }
+        .search-box input:focus {
+            box-shadow: none;
+        }
+        .search-clear {
+            background: #e2e8f0;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.3rem;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            color: #475569;
+        }
+        .search-clear.visible {
+            display: flex;
+        }
         .inventory-list {
             display: flex;
             flex-direction: column;
@@ -290,6 +337,13 @@
             flex: 1;
             line-height: 1.3;
         }
+        .item-title small {
+            display: block;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 2px;
+        }
         .item-detail {
             display: flex;
             flex-wrap: wrap;
@@ -314,6 +368,64 @@
             font-weight: 700;
             color: #1e40af;
             white-space: nowrap;
+        }
+        .variantes-list {
+            background: #f1f5f9;
+            border-radius: 18px;
+            padding: 10px 12px;
+            margin-bottom: 14px;
+            font-size: 0.9rem;
+        }
+        .variante-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 6px;
+            border-bottom: 1px dashed #cbd5e1;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .variante-row:last-child {
+            border-bottom: none;
+        }
+        .variante-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+            min-width: 140px;
+        }
+        .variante-serie {
+            font-weight: 700;
+            color: #0f172a;
+            font-family: monospace;
+            font-size: 0.95rem;
+        }
+        .variante-lista {
+            font-size: 0.8rem;
+            color: #475569;
+        }
+        .variante-contador {
+            font-size: 0.8rem;
+            color: #1e40af;
+            font-weight: 600;
+        }
+        .variante-actions {
+            display: flex;
+            gap: 6px;
+        }
+        .variante-actions button {
+            border: none;
+            background: white;
+            border-radius: 12px;
+            padding: 8px 12px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            color: #475569;
+        }
+        .variante-actions button.del {
+            color: #dc2626;
         }
         .stock-control {
             display: flex;
@@ -449,6 +561,7 @@
             .stock-control button { width: 50px; height: 50px; font-size: 1.8rem; }
             .stock-control .stock-number { font-size: 1.8rem; }
             .item-actions .btn { font-size: 0.9rem; padding: 14px 8px; }
+            .item-title { font-size: 1.05rem; }
         }
     </style>
 </head>
@@ -494,7 +607,7 @@
             </div>
             <div class="field-group">
                 <label>📋 Modelo</label>
-                <input type="text" id="modeloInput" placeholder="Ej: MP 4055, iR-ADV C555" autocomplete="off">
+                <input type="text" id="modeloInput" placeholder="" autocomplete="off">
             </div>
             <div class="button-row">
                 <button class="btn btn-secondary" id="backStep2">⬅️ Atrás</button>
@@ -509,6 +622,10 @@
                 <div class="field-group">
                     <label>🔢 Número de Serie</label>
                     <input type="text" id="numeroSerieInput" placeholder="Ej: RIC-12345" autocomplete="off">
+                </div>
+                <div class="field-group">
+                    <label>📋 Número de Lista</label>
+                    <input type="text" id="numeroListaInput" placeholder="Ej: L-001, 25" autocomplete="off">
                 </div>
                 <div class="field-group">
                     <label>📟 Contador (copias/páginas)</label>
@@ -544,7 +661,8 @@
 
         <div class="info-note">
             💾 <strong>Se guarda solo.</strong> Si cierras la página, no pierdes los datos.<br>
-            🔁 Para cambiar de stand, usa el botón <strong>📍 Cambiar stand</strong> en cada producto.
+            🔁 Para cambiar de stand, usa el botón <strong>📍 Cambiar stand</strong> en cada producto.<br>
+            📋 <strong>Fotocopiadoras:</strong> si es el mismo modelo, se agrupan y verás cada serie con su número de lista.
         </div>
     </div>
 
@@ -558,6 +676,12 @@
     <!-- INVENTARIO -->
     <div class="card">
         <div class="card-title">📋 Inventario actual</div>
+        <!-- BUSCADOR -->
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="Buscar por modelo, marca o serie..." autocomplete="off">
+            <button class="search-clear" id="searchClear" title="Limpiar">✕</button>
+        </div>
         <div id="inventoryContainer" class="inventory-list">
             <!-- Aquí se generan los items -->
         </div>
@@ -568,26 +692,46 @@
 <div class="stand-picker-modal" id="standPickerModal">
     <div class="stand-picker-content">
         <h3>📍 Elige el nuevo stand</h3>
-        <div class="stand-grid" id="standGrid">
-            <!-- Se llena con JS -->
-        </div>
+        <div class="stand-grid" id="standGrid"></div>
         <button class="btn btn-secondary" id="closeStandPicker">Cancelar</button>
     </div>
 </div>
 
-<!-- Toast de notificación -->
+<!-- Modal para editar variante (serie / lista / contador) -->
+<div class="stand-picker-modal" id="varianteModal">
+    <div class="stand-picker-content">
+        <h3>✏️ Editar serie</h3>
+        <div class="field-group">
+            <label>🔢 Número de Serie</label>
+            <input type="text" id="editSerieInput" placeholder="Serie">
+        </div>
+        <div class="field-group">
+            <label>📋 Número de Lista</label>
+            <input type="text" id="editListaInput" placeholder="Número de lista">
+        </div>
+        <div class="field-group">
+            <label>📟 Contador</label>
+            <input type="number" id="editContadorInput" value="0" min="0" step="100">
+        </div>
+        <div class="button-row">
+            <button class="btn btn-secondary" id="cancelVarianteEdit">Cancelar</button>
+            <button class="btn btn-success" id="saveVarianteEdit">Guardar</button>
+        </div>
+    </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
     // ==================== DATOS ====================
-    let productos = [];
+    let productos = [];   // Cada producto es una variante individual (fotocopiadora o tóner)
     let nextId = 1;
     const STANDS_VALIDOS = ["104", "105", "106", "108", "109", "121", "134", "135"];
-    const STORAGE_KEY = 'inventario_fotocopiadoras_v2';
+    const STORAGE_KEY = 'inventario_fotocopiadoras_v3';
 
     // ==================== ESTADO DEL ASISTENTE ====================
     let currentStep = 1;
-    let selectedType = null; // 'fotocopiadora' o 'toner'
+    let selectedType = null;
 
     // ==================== ELEMENTOS ====================
     const step1 = document.getElementById('step1');
@@ -607,6 +751,7 @@
     const marcaSelect = document.getElementById('marcaSelect');
     const modeloInput = document.getElementById('modeloInput');
     const numeroSerieInput = document.getElementById('numeroSerieInput');
+    const numeroListaInput = document.getElementById('numeroListaInput');
     const contadorInput = document.getElementById('contadorInput');
     const cantidadTonersInput = document.getElementById('cantidadTonersInput');
     const standSelect = document.getElementById('standSelect');
@@ -614,6 +759,8 @@
     const tonerFields = document.getElementById('tonerFields');
 
     const inventoryContainer = document.getElementById('inventoryContainer');
+    const searchInput = document.getElementById('searchInput');
+    const searchClear = document.getElementById('searchClear');
     const exportExcelBtn = document.getElementById('exportExcelBtn');
     const exportPdfBtn = document.getElementById('exportPdfBtn');
     const resetStorageBtn = document.getElementById('resetStorageBtn');
@@ -622,7 +769,17 @@
     const standGrid = document.getElementById('standGrid');
     const closeStandPicker = document.getElementById('closeStandPicker');
 
+    const varianteModal = document.getElementById('varianteModal');
+    const editSerieInput = document.getElementById('editSerieInput');
+    const editListaInput = document.getElementById('editListaInput');
+    const editContadorInput = document.getElementById('editContadorInput');
+    const cancelVarianteEdit = document.getElementById('cancelVarianteEdit');
+    const saveVarianteEdit = document.getElementById('saveVarianteEdit');
+
     const toastEl = document.getElementById('toast');
+
+    let standPickerProductId = null;
+    let editingVarianteId = null;
 
     // ==================== UTILIDADES ====================
     function showToast(msg) {
@@ -648,6 +805,12 @@
                 const parsed = JSON.parse(data);
                 productos = parsed.productos || [];
                 nextId = parsed.nextId || 1;
+                // Migración: asegurar que cada foto tenga numeroLista
+                productos.forEach(p => {
+                    if (p.tipo === 'fotocopiadora' && p.numeroLista === undefined) {
+                        p.numeroLista = '';
+                    }
+                });
             } catch(e) { console.error(e); }
         }
     }
@@ -662,18 +825,36 @@
         }
     }
 
-    // ==================== LÓGICA DE BÚSQUEDA ====================
-    function findExistingFotocopiadora(marca, modelo, serie, stand) {
-        return productos.find(p => p.tipo === 'fotocopiadora' && p.marca === marca && p.modelo === modelo && p.serie === serie && p.stand === stand);
+    // ==================== LÓGICA DE AGRUPACIÓN ====================
+    // Una fotocopiadora se agrupa por marca + modelo + stand
+    // Un tóner se agrupa por marca + modelo + stand
+    // Cada producto en el array es una variante individual (foto) o un stock agregado (tóner)
+
+    function getGrupoKey(prod) {
+        return `${prod.tipo}||${prod.marca}||${prod.modelo}||${prod.stand}`;
     }
 
-    function findExistingToner(marca, modelo, stand) {
-        return productos.find(p => p.tipo === 'toner' && p.marca === marca && p.modelo === modelo && p.stand === stand);
+    function agruparProductos() {
+        const grupos = new Map();
+        for (const p of productos) {
+            const key = getGrupoKey(p);
+            if (!grupos.has(key)) {
+                grupos.set(key, {
+                    key,
+                    tipo: p.tipo,
+                    marca: p.marca,
+                    modelo: p.modelo,
+                    stand: p.stand,
+                    variantes: []
+                });
+            }
+            grupos.get(key).variantes.push(p);
+        }
+        return Array.from(grupos.values());
     }
 
     // ==================== ASISTENTE POR PASOS ====================
     function updateStepUI() {
-        // Ocultar todos los pasos
         step1.classList.remove('active');
         step2.classList.remove('active');
         step3.classList.remove('active');
@@ -693,7 +874,6 @@
             step1Indicator.classList.add('completed');
             step2Indicator.classList.add('completed');
             step3Indicator.classList.add('active');
-            // Ajustar campos según tipo
             if (selectedType === 'fotocopiadora') {
                 fotocopiadoraFields.style.display = 'block';
                 tonerFields.style.display = 'none';
@@ -704,7 +884,6 @@
         }
     }
 
-    // Paso 1: seleccionar tipo
     optFotocopiadora.addEventListener('click', () => {
         selectedType = 'fotocopiadora';
         optFotocopiadora.classList.add('selected');
@@ -724,7 +903,6 @@
         updateStepUI();
     });
 
-    // Paso 2: marca y modelo
     backStep2.addEventListener('click', () => {
         currentStep = 1;
         updateStepUI();
@@ -740,7 +918,6 @@
         updateStepUI();
     });
 
-    // Paso 3: detalles
     backStep3.addEventListener('click', () => {
         currentStep = 2;
         updateStepUI();
@@ -761,31 +938,46 @@
                 showToast("⚠️ Escribe el número de serie");
                 return;
             }
+            const numeroLista = numeroListaInput.value.trim();
             let contadorVal = parseInt(contadorInput.value);
             if (isNaN(contadorVal)) contadorVal = 0;
 
-            const existente = findExistingFotocopiadora(marca, modelo, serie, stand);
+            // Verificar duplicado exacto (misma serie, mismo stand)
+            const existente = productos.find(p =>
+                p.tipo === 'fotocopiadora' &&
+                p.marca === marca && p.modelo === modelo &&
+                p.serie === serie && p.stand === stand
+            );
+
             if (existente) {
                 existente.stockTotal += 1;
                 if (contadorVal > existente.contador) existente.contador = contadorVal;
-                showToast("✅ Stock sumado +1");
+                if (numeroLista) existente.numeroLista = numeroLista;
+                showToast("✅ Stock sumado +1 (misma serie)");
             } else {
                 productos.push({
                     id: nextId++,
                     tipo: 'fotocopiadora',
                     marca, modelo, serie, stand,
+                    numeroLista: numeroLista || '',
                     stockTotal: 1,
                     contador: contadorVal
                 });
                 showToast("✅ Fotocopiadora agregada");
             }
             numeroSerieInput.value = '';
+            numeroListaInput.value = '';
             contadorInput.value = '0';
         } else {
             let cantidad = parseInt(cantidadTonersInput.value) || 1;
             if (cantidad <= 0) cantidad = 1;
 
-            const existente = findExistingToner(marca, modelo, stand);
+            // Los tóneres se agrupan por marca + modelo + stand
+            const existente = productos.find(p =>
+                p.tipo === 'toner' &&
+                p.marca === marca && p.modelo === modelo && p.stand === stand
+            );
+
             if (existente) {
                 existente.stockTotal += cantidad;
                 showToast(`✅ Stock sumado +${cantidad}`);
@@ -816,47 +1008,116 @@
 
     // ==================== RENDERIZAR INVENTARIO ====================
     function renderizarInventario() {
-        if (productos.length === 0) {
-            inventoryContainer.innerHTML = `<div class="empty-message">📭 No hay productos todavía.<br>Usa el asistente de arriba para agregar.</div>`;
+        const query = searchInput.value.trim().toLowerCase();
+
+        // Agrupar
+        let grupos = agruparProductos();
+
+        // Filtrar por búsqueda
+        if (query) {
+            grupos = grupos.filter(g => {
+                // Buscar en modelo, marca, stand
+                if (g.modelo.toLowerCase().includes(query)) return true;
+                if (g.marca.toLowerCase().includes(query)) return true;
+                if (g.stand.toLowerCase().includes(query)) return true;
+                // Buscar en variantes (serie, número de lista)
+                return g.variantes.some(v =>
+                    (v.serie && v.serie.toLowerCase().includes(query)) ||
+                    (v.numeroLista && v.numeroLista.toLowerCase().includes(query))
+                );
+            });
+        }
+
+        if (grupos.length === 0) {
+            if (query) {
+                inventoryContainer.innerHTML = `<div class="empty-message">🔍 No se encontraron productos para "<strong>${escapeHtml(query)}</strong>"</div>`;
+            } else {
+                inventoryContainer.innerHTML = `<div class="empty-message">📭 No hay productos todavía.<br>Usa el asistente de arriba para agregar.</div>`;
+            }
             return;
         }
 
         let html = '';
-        for (const prod of productos) {
-            const esFoto = prod.tipo === 'fotocopiadora';
+        for (const grupo of grupos) {
+            const esFoto = grupo.tipo === 'fotocopiadora';
             const icono = esFoto ? '🖨️' : '🧴';
-            const titulo = `${prod.marca} ${prod.modelo}`;
+            const titulo = `${grupo.marca} ${grupo.modelo}`;
 
-            let detalles = `
-                <span>📍 Stand ${prod.stand}</span>
-                ${esFoto ? `<span>🔢 ${escapeHtml(prod.serie)}</span>` : ''}
-                ${esFoto ? `<span>📟 ${(prod.contador || 0).toLocaleString()} copias</span>` : ''}
-            `;
+            // Calcular stock total del grupo
+            let stockTotalGrupo = 0;
+            for (const v of grupo.variantes) stockTotalGrupo += (v.stockTotal || 0);
 
-            html += `
-                <div class="inventory-item" data-id="${prod.id}">
-                    <div class="item-header">
-                        <div class="item-icon">${icono}</div>
-                        <div class="item-title">${escapeHtml(titulo)}</div>
+            let detalles = `<span>📍 Stand ${grupo.stand}</span>`;
+
+            if (esFoto) {
+                // Listar variantes (series)
+                let variantesHtml = '';
+                for (const v of grupo.variantes) {
+                    variantesHtml += `
+                        <div class="variante-row">
+                            <div class="variante-info">
+                                <span class="variante-serie">🔢 ${escapeHtml(v.serie || 'Sin serie')}</span>
+                                ${v.numeroLista ? `<span class="variante-lista">📋 Lista: ${escapeHtml(v.numeroLista)}</span>` : ''}
+                                <span class="variante-contador">📟 ${(v.contador || 0).toLocaleString()} copias</span>
+                            </div>
+                            <div class="variante-actions">
+                                <button class="edit-variante" data-id="${v.id}" title="Editar">✏️</button>
+                                <button class="del del-variante" data-id="${v.id}" title="Eliminar">🗑️</button>
+                            </div>
+                        </div>
+                    `;
+                }
+                html += `
+                    <div class="inventory-item" data-grupo="${escapeHtml(grupo.key)}">
+                        <div class="item-header">
+                            <div class="item-icon">${icono}</div>
+                            <div class="item-title">
+                                ${escapeHtml(titulo)}
+                                <small>${grupo.variantes.length} serie${grupo.variantes.length > 1 ? 's' : ''} · Total ${stockTotalGrupo} uds</small>
+                            </div>
+                        </div>
+                        <div class="item-detail">
+                            ${detalles}
+                        </div>
+                        <div class="variantes-list">
+                            ${variantesHtml}
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn btn-outline change-stand-btn" data-grupo="${escapeHtml(grupo.key)}">📍 Cambiar stand</button>
+                            <button class="btn btn-danger delete-grupo-btn" data-grupo="${escapeHtml(grupo.key)}">🗑️ Eliminar todo</button>
+                        </div>
                     </div>
-                    <div class="item-detail">
-                        ${detalles}
+                `;
+            } else {
+                // Tóner: un solo registro por grupo (stock total)
+                const v = grupo.variantes[0];
+                html += `
+                    <div class="inventory-item" data-grupo="${escapeHtml(grupo.key)}">
+                        <div class="item-header">
+                            <div class="item-icon">${icono}</div>
+                            <div class="item-title">${escapeHtml(titulo)}</div>
+                        </div>
+                        <div class="item-detail">
+                            ${detalles}
+                            <span>🧴 ${stockTotalGrupo} unidades</span>
+                        </div>
+                        <div class="stock-control">
+                            <button class="decrement-btn" data-id="${v.id}" data-delta="-1">−</button>
+                            <span class="stock-number">${stockTotalGrupo}</span>
+                            <button class="increment-btn" data-id="${v.id}" data-delta="1">+</button>
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn btn-outline change-stand-btn" data-grupo="${escapeHtml(grupo.key)}">📍 Cambiar stand</button>
+                            <button class="btn btn-danger delete-grupo-btn" data-grupo="${escapeHtml(grupo.key)}">🗑️ Eliminar</button>
+                        </div>
                     </div>
-                    <div class="stock-control">
-                        <button class="decrement-btn" data-id="${prod.id}" data-delta="-1">−</button>
-                        <span class="stock-number">${prod.stockTotal}</span>
-                        <button class="increment-btn" data-id="${prod.id}" data-delta="1">+</button>
-                    </div>
-                    <div class="item-actions">
-                        <button class="btn btn-outline change-stand-btn" data-id="${prod.id}">📍 Cambiar stand</button>
-                        <button class="btn btn-danger delete-btn" data-id="${prod.id}">🗑️ Eliminar</button>
-                    </div>
-                </div>
-            `;
+                `;
+            }
         }
         inventoryContainer.innerHTML = html;
 
-        // Eventos de botones + y -
+        // ===== EVENTOS =====
+        // Botones + y - (tóner)
         document.querySelectorAll('.decrement-btn, .increment-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -866,23 +1127,36 @@
             });
         });
 
-        // Evento eliminar
-        document.querySelectorAll('.delete-btn').forEach(btn => {
+        // Editar variante (foto)
+        document.querySelectorAll('.edit-variante').forEach(btn => {
             btn.addEventListener('click', () => {
-                const id = parseInt(btn.dataset.id);
-                eliminarProducto(id);
+                abrirEditarVariante(parseInt(btn.dataset.id));
             });
         });
 
-        // Evento cambiar stand
+        // Eliminar variante individual (foto)
+        document.querySelectorAll('.del-variante').forEach(btn => {
+            btn.addEventListener('click', () => {
+                eliminarProducto(parseInt(btn.dataset.id));
+            });
+        });
+
+        // Cambiar stand por grupo
         document.querySelectorAll('.change-stand-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                const id = parseInt(btn.dataset.id);
-                abrirStandPicker(id);
+                abrirStandPickerPorGrupo(btn.dataset.grupo);
+            });
+        });
+
+        // Eliminar grupo completo
+        document.querySelectorAll('.delete-grupo-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                eliminarGrupo(btn.dataset.grupo);
             });
         });
     }
 
+    // ==================== AJUSTES ====================
     function ajustarStock(id, delta) {
         const prod = productos.find(p => p.id === id);
         if (!prod) return;
@@ -916,25 +1190,36 @@
         }
     }
 
-    // ==================== MODAL DE STAND ====================
-    let standPickerProductId = null;
+    function eliminarGrupo(grupoKey) {
+        const partes = grupoKey.split('||');
+        const tipo = partes[0], marca = partes[1], modelo = partes[2], stand = partes[3];
+        const aEliminar = productos.filter(p =>
+            p.tipo === tipo && p.marca === marca && p.modelo === modelo && p.stand === stand
+        );
+        if (aEliminar.length === 0) return;
+        if (confirm(`¿Eliminar TODOS los "${marca} ${modelo}" del Stand ${stand}? (${aEliminar.length} registro(s))`)) {
+            productos = productos.filter(p => !(p.tipo === tipo && p.marca === marca && p.modelo === modelo && p.stand === stand));
+            guardarEnStorage();
+            renderizarInventario();
+            showToast("🗑️ Grupo eliminado");
+        }
+    }
 
-    function abrirStandPicker(id) {
-        const prod = productos.find(p => p.id === id);
-        if (!prod) return;
-        standPickerProductId = id;
-        // Generar opciones de stand
+    // ==================== MODAL DE STAND (por grupo) ====================
+    function abrirStandPickerPorGrupo(grupoKey) {
+        const partes = grupoKey.split('||');
+        const tipo = partes[0], marca = partes[1], modelo = partes[2], standActual = partes[3];
+        standPickerProductId = { grupoKey, tipo, marca, modelo, standActual };
+
         standGrid.innerHTML = STANDS_VALIDOS.map(s => `
-            <div class="stand-option ${prod.stand === s ? 'selected' : ''}" data-stand="${s}">Stand ${s}</div>
+            <div class="stand-option ${standActual === s ? 'selected' : ''}" data-stand="${s}">Stand ${s}</div>
         `).join('');
 
         standPickerModal.classList.add('active');
 
-        // Eventos de selección
         document.querySelectorAll('.stand-option').forEach(el => {
             el.addEventListener('click', () => {
-                const nuevoStand = el.dataset.stand;
-                cambiarStand(standPickerProductId, nuevoStand);
+                cambiarStandGrupo(standPickerProductId, el.dataset.stand);
                 cerrarStandPicker();
             });
         });
@@ -945,58 +1230,145 @@
         standPickerProductId = null;
     }
 
-    function cambiarStand(id, nuevoStand) {
-        const prod = productos.find(p => p.id === id);
-        if (!prod || prod.stand === nuevoStand) return;
+    function cambiarStandGrupo(info, nuevoStand) {
+        if (!info || info.standActual === nuevoStand) return;
+        const { tipo, marca, modelo, standActual } = info;
 
-        let colision = null;
-        if (prod.tipo === 'fotocopiadora') {
-            colision = findExistingFotocopiadora(prod.marca, prod.modelo, prod.serie, nuevoStand);
-        } else {
-            colision = findExistingToner(prod.marca, prod.modelo, nuevoStand);
-        }
+        // Buscar si ya existe un grupo en el nuevo stand
+        const grupoDestino = productos.filter(p =>
+            p.tipo === tipo && p.marca === marca && p.modelo === modelo && p.stand === nuevoStand
+        );
+        const grupoOrigen = productos.filter(p =>
+            p.tipo === tipo && p.marca === marca && p.modelo === modelo && p.stand === standActual
+        );
 
-        if (colision) {
-            if (confirm(`⚠️ Ya existe en Stand ${nuevoStand} (stock ${colision.stockTotal}). ¿Fusionar?`)) {
-                colision.stockTotal += prod.stockTotal;
-                if (prod.tipo === 'fotocopiadora' && (prod.contador || 0) > (colision.contador || 0)) {
-                    colision.contador = prod.contador;
+        if (grupoOrigen.length === 0) return;
+
+        if (grupoDestino.length > 0) {
+            // Fusionar
+            if (confirm(`⚠️ Ya existe "${marca} ${modelo}" en Stand ${nuevoStand}. ¿Fusionar?`)) {
+                if (tipo === 'toner') {
+                    // Sumar stock al primer tóner destino
+                    const destino = grupoDestino[0];
+                    for (const o of grupoOrigen) destino.stockTotal += o.stockTotal;
+                    // Eliminar los de origen
+                    productos = productos.filter(p => !grupoOrigen.includes(p));
+                } else {
+                    // Fotocopiadoras: mover todas las variantes, excepto duplicados exactos de serie
+                    for (const o of grupoOrigen) {
+                        const duplicado = grupoDestino.find(d => d.serie === o.serie);
+                        if (duplicado) {
+                            duplicado.stockTotal += o.stockTotal;
+                            if ((o.contador || 0) > (duplicado.contador || 0)) duplicado.contador = o.contador;
+                            if (o.numeroLista) duplicado.numeroLista = o.numeroLista;
+                            productos = productos.filter(p => p.id !== o.id);
+                        } else {
+                            o.stand = nuevoStand;
+                        }
+                    }
                 }
-                productos = productos.filter(p => p.id !== id);
                 guardarEnStorage();
                 renderizarInventario();
-                showToast("🔀 Productos fusionados");
+                showToast("🔀 Grupos fusionados");
             }
         } else {
-            prod.stand = nuevoStand;
+            // Mover todo el grupo
+            for (const p of grupoOrigen) p.stand = nuevoStand;
             guardarEnStorage();
             renderizarInventario();
             showToast(`📍 Stand cambiado a ${nuevoStand}`);
         }
     }
 
+    // ==================== MODAL EDITAR VARIANTE ====================
+    function abrirEditarVariante(id) {
+        const prod = productos.find(p => p.id === id);
+        if (!prod) return;
+        editingVarianteId = id;
+        editSerieInput.value = prod.serie || '';
+        editListaInput.value = prod.numeroLista || '';
+        editContadorInput.value = prod.contador || 0;
+        varianteModal.classList.add('active');
+    }
+
+    function cerrarEditarVariante() {
+        varianteModal.classList.remove('active');
+        editingVarianteId = null;
+    }
+
+    cancelVarianteEdit.addEventListener('click', cerrarEditarVariante);
+
+    saveVarianteEdit.addEventListener('click', () => {
+        if (!editingVarianteId) return;
+        const prod = productos.find(p => p.id === editingVarianteId);
+        if (!prod) return;
+
+        const nuevaSerie = editSerieInput.value.trim();
+        if (!nuevaSerie) {
+            showToast("⚠️ La serie no puede estar vacía");
+            return;
+        }
+        // Verificar duplicado de serie dentro del mismo grupo
+        const duplicado = productos.find(p =>
+            p.id !== prod.id &&
+            p.tipo === 'fotocopiadora' &&
+            p.marca === prod.marca && p.modelo === prod.modelo &&
+            p.stand === prod.stand && p.serie === nuevaSerie
+        );
+        if (duplicado) {
+            showToast("⚠️ Ya existe esa serie en este modelo y stand");
+            return;
+        }
+        prod.serie = nuevaSerie;
+        prod.numeroLista = editListaInput.value.trim();
+        let cont = parseInt(editContadorInput.value);
+        if (isNaN(cont)) cont = 0;
+        prod.contador = cont;
+        guardarEnStorage();
+        renderizarInventario();
+        cerrarEditarVariante();
+        showToast("✏️ Variante actualizada");
+    });
+
+    varianteModal.addEventListener('click', (e) => {
+        if (e.target === varianteModal) cerrarEditarVariante();
+    });
+
     closeStandPicker.addEventListener('click', cerrarStandPicker);
     standPickerModal.addEventListener('click', (e) => {
         if (e.target === standPickerModal) cerrarStandPicker();
+    });
+
+    // ==================== BUSCADOR ====================
+    searchInput.addEventListener('input', () => {
+        searchClear.classList.toggle('visible', searchInput.value.length > 0);
+        renderizarInventario();
+    });
+    searchClear.addEventListener('click', () => {
+        searchInput.value = '';
+        searchClear.classList.remove('visible');
+        renderizarInventario();
+        searchInput.focus();
     });
 
     // ==================== EXPORTAR ====================
     function exportToExcel() {
         if (productos.length === 0) { showToast("No hay datos"); return; }
         const wb = XLSX.utils.book_new();
-        const headers = ["Tipo", "Marca", "Modelo", "Serie", "Stand", "Stock", "Contador", "Estado"];
+        const headers = ["Tipo", "Marca", "Modelo", "Serie", "N° Lista", "Stand", "Stock", "Contador", "Estado"];
         const rows = productos.map(p => [
             p.tipo === 'fotocopiadora' ? 'Fotocopiadora' : 'Tóner',
             p.marca,
             p.modelo,
             p.tipo === 'fotocopiadora' ? (p.serie || '') : '---',
+            p.tipo === 'fotocopiadora' ? (p.numeroLista || '') : '---',
             `Stand ${p.stand}`,
             p.stockTotal,
             p.tipo === 'fotocopiadora' ? (p.contador || 0).toLocaleString() : '---',
             p.stockTotal === 0 ? 'AGOTADO' : 'Disponible'
         ]);
         const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-        ws['!cols'] = [{ wch: 18 }, { wch: 22 }, { wch: 35 }, { wch: 25 }, { wch: 12 }, { wch: 10 }, { wch: 18 }, { wch: 14 }];
+        ws['!cols'] = [{ wch: 18 }, { wch: 22 }, { wch: 35 }, { wch: 25 }, { wch: 14 }, { wch: 12 }, { wch: 10 }, { wch: 18 }, { wch: 14 }];
         XLSX.utils.book_append_sheet(wb, ws, "Inventario");
         XLSX.writeFile(wb, `inventario_${new Date().toISOString().slice(0,19)}.xlsx`);
     }
@@ -1006,12 +1378,13 @@
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
-        const tableColumn = ["Tipo", "Marca", "Modelo", "Serie", "Stand", "Stock", "Contador", "Estado"];
+        const tableColumn = ["Tipo", "Marca", "Modelo", "Serie", "N° Lista", "Stand", "Stock", "Contador", "Estado"];
         const tableRows = productos.map(p => [
             p.tipo === 'fotocopiadora' ? 'Fotocopiadora' : 'Tóner',
             p.marca,
             p.modelo,
             p.tipo === 'fotocopiadora' ? (p.serie || '') : '---',
+            p.tipo === 'fotocopiadora' ? (p.numeroLista || '') : '---',
             `Stand ${p.stand}`,
             p.stockTotal.toString(),
             p.tipo === 'fotocopiadora' ? (p.contador || 0).toLocaleString() : '---',
@@ -1022,7 +1395,7 @@
         doc.text("Reporte de Inventario", 14, 20);
         doc.setFontSize(10);
         doc.text(`Generado: ${new Date().toLocaleString()}`, 14, 30);
-        doc.text(`Total: ${productos.length} productos`, 14, 37);
+        doc.text(`Total: ${productos.length} registros`, 14, 37);
 
         doc.autoTable({
             head: [tableColumn],
@@ -1031,7 +1404,7 @@
             theme: 'striped',
             headStyles: { fillColor: [41, 112, 165], textColor: 255, fontSize: 8, fontStyle: 'bold' },
             bodyStyles: { fontSize: 7 },
-            columnStyles: { 0: { cellWidth: 26 }, 1: { cellWidth: 26 }, 2: { cellWidth: 36 }, 3: { cellWidth: 28 }, 4: { cellWidth: 16 }, 5: { cellWidth: 14 }, 6: { cellWidth: 22 }, 7: { cellWidth: 16 } },
+            columnStyles: { 0: { cellWidth: 22 }, 1: { cellWidth: 22 }, 2: { cellWidth: 32 }, 3: { cellWidth: 26 }, 4: { cellWidth: 16 }, 5: { cellWidth: 14 }, 6: { cellWidth: 12 }, 7: { cellWidth: 20 }, 8: { cellWidth: 16 } },
             alternateRowStyles: { fillColor: [240, 248, 255] },
             margin: { left: 6, right: 6 }
         });
