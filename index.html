@@ -276,6 +276,19 @@
         .toolbar .btn-danger { margin-left: auto; border-color: transparent; background: transparent; }
         .toolbar .btn-danger:hover { background: #fdf2f1; }
 
+        .sync {
+            margin-bottom: 14px;
+            padding: 12px 14px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--white);
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+        .sync strong { color: var(--ink); font-weight: 600; }
+        .sync-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+        .sync-actions .btn { flex: 1; min-width: 150px; min-height: 46px; font-size: 0.95rem; padding: 0 12px; }
+
         .search-box {
             display: flex;
             align-items: center;
@@ -532,6 +545,8 @@
         <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-5"/></symbol>
         <symbol id="i-box" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/></symbol>
         <symbol id="i-swap" viewBox="0 0 24 24"><path d="M7 7h13l-3-3M17 17H4l3 3"/></symbol>
+        <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></symbol>
+        <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V5M7 9l5-5 5 5M5 20h14"/></symbol>
         <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
         <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
     </defs>
@@ -601,9 +616,9 @@
                     <input type="text" id="numeroListaInput" placeholder="" autocomplete="off">
                 </div>
             </div>
-            <div class="field-group" id="cantidadField" style="display:none;">
-                <label for="cantidadInput"><svg class="i" aria-hidden="true"><use href="#i-hash"/></svg>Cantidad de unidades</label>
-                <input type="number" id="cantidadInput" value="1" min="1" step="1" placeholder="Número de unidades" inputmode="numeric">
+            <div class="field-group" id="tonerFields" style="display:none;">
+                <label for="tonerModeloInput"><svg class="i" aria-hidden="true"><use href="#i-box"/></svg>Modelo del tóner</label>
+                <input type="text" id="tonerModeloInput" placeholder="" autocomplete="off">
             </div>
             <div class="field-group">
                 <label for="standSelect"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>Stand</label>
@@ -647,6 +662,15 @@
             <button class="btn btn-danger" id="resetStorageBtn"><svg class="i" aria-hidden="true"><use href="#i-trash"/></svg> Borrar todo</button>
         </div>
 
+        <div class="sync">
+            <p><strong>Los datos están en este dispositivo.</strong> Para verlos en otro, guarda un respaldo aquí y cárgalo allá.</p>
+            <div class="sync-actions">
+                <button class="btn btn-outline" id="backupBtn"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg> Guardar respaldo</button>
+                <button class="btn btn-outline" id="restoreBtn"><svg class="i" aria-hidden="true"><use href="#i-upload"/></svg> Cargar respaldo</button>
+                <input type="file" id="restoreInput" accept=".json,application/json,text/plain" hidden>
+            </div>
+        </div>
+
         <div class="search-box">
             <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
             <input type="text" id="searchInput" placeholder="Buscar por marca, lista, modelo o serie" autocomplete="off" aria-label="Buscar en el inventario">
@@ -678,11 +702,11 @@
         </div>
         <div class="field-group">
             <label for="editModeloInput"><svg class="i" aria-hidden="true"><use href="#i-box"/></svg>Modelo</label>
-            <input type="text" id="editModeloInput" placeholder="Ej: MP 4055">
+            <input type="text" id="editModeloInput" placeholder="">
         </div>
         <div class="field-group">
             <label for="editSerieInput"><svg class="i" aria-hidden="true"><use href="#i-hash"/></svg>Número de serie</label>
-            <input type="text" id="editSerieInput" placeholder="Ej: RIC-12345">
+            <input type="text" id="editSerieInput" placeholder="">
         </div>
         <div class="field-group">
             <label for="editContadorInput"><svg class="i" aria-hidden="true"><use href="#i-gauge"/></svg>Contador (copias)</label>
@@ -725,8 +749,8 @@
 
     const marcaSelect = document.getElementById('marcaSelect');
     const numeroListaInput = document.getElementById('numeroListaInput');
-    const cantidadInput = document.getElementById('cantidadInput');
-    const cantidadField = document.getElementById('cantidadField');
+    const tonerModeloInput = document.getElementById('tonerModeloInput');
+    const tonerFields = document.getElementById('tonerFields');
     const standSelect = document.getElementById('standSelect');
     const fotocopiadoraFields = document.getElementById('fotocopiadoraFields');
 
@@ -814,7 +838,11 @@
         if (prod.tipo === 'fotocopiadora') {
             return `${prod.tipo}||${prod.marca}||${prod.numeroLista || ''}||${prod.stand}`;
         }
-        return `${prod.tipo}||${prod.marca}||${prod.stand}`;
+        return `${prod.tipo}||${prod.marca || ''}||${prod.modelo || ''}||${prod.stand}`;
+    }
+
+    function nombreProd(p) {
+        return p.tipo === 'toner' ? (p.modelo || p.marca) : p.marca;
     }
 
     function agruparProductos() {
@@ -825,7 +853,8 @@
                 grupos.set(key, {
                     key,
                     tipo: p.tipo,
-                    marca: p.marca,
+                    marca: p.marca || '',
+                    modelo: p.tipo === 'toner' ? (p.modelo || '') : '',
                     numeroLista: p.numeroLista || '',
                     stand: p.stand,
                     variantes: []
@@ -837,13 +866,20 @@
     }
 
     // ==================== ASISTENTE POR PASOS ====================
+    // Fotocopiadora: Tipo > Marca > Detalles.  Tóner: Tipo > Detalles (modelo y stand).
     function updateStepUI() {
+        const esToner = selectedType === 'toner';
+        const esFoto = selectedType === 'fotocopiadora';
+
         step1.classList.remove('active');
         step2.classList.remove('active');
         step3.classList.remove('active');
         step1Indicator.classList.remove('active', 'completed');
         step2Indicator.classList.remove('active', 'completed');
         step3Indicator.classList.remove('active', 'completed');
+
+        step2Indicator.style.display = esToner ? 'none' : '';
+        step3Indicator.querySelector('.step-number').textContent = esToner ? '2' : '3';
 
         if (currentStep === 1) {
             step1.classList.add('active');
@@ -855,15 +891,10 @@
         } else if (currentStep === 3) {
             step3.classList.add('active');
             step1Indicator.classList.add('completed');
-            step2Indicator.classList.add('completed');
+            if (!esToner) step2Indicator.classList.add('completed');
             step3Indicator.classList.add('active');
-            if (selectedType === 'fotocopiadora') {
-                fotocopiadoraFields.style.display = 'block';
-                cantidadField.style.display = 'none';
-            } else {
-                fotocopiadoraFields.style.display = 'none';
-                cantidadField.style.display = 'flex';
-            }
+            fotocopiadoraFields.style.display = esFoto ? 'block' : 'none';
+            tonerFields.style.display = esToner ? 'flex' : 'none';
         }
     }
 
@@ -875,6 +906,7 @@
         optFotocopiadora.setAttribute('aria-pressed', esFoto);
         optToner.setAttribute('aria-pressed', !esFoto);
         nextStep1.disabled = false;
+        updateStepUI();
     }
 
     optFotocopiadora.addEventListener('click', () => marcarTipo('fotocopiadora'));
@@ -882,8 +914,9 @@
 
     nextStep1.addEventListener('click', () => {
         if (!selectedType) return;
-        currentStep = 2;
+        currentStep = selectedType === 'toner' ? 3 : 2;
         updateStepUI();
+        if (selectedType === 'toner') tonerModeloInput.focus();
     });
 
     backStep2.addEventListener('click', () => {
@@ -897,15 +930,15 @@
     });
 
     backStep3.addEventListener('click', () => {
-        currentStep = 2;
+        currentStep = selectedType === 'toner' ? 1 : 2;
         updateStepUI();
     });
 
     guardarProductoBtn.addEventListener('click', () => {
-        const marca = marcaSelect.value;
         const stand = standSelect.value;
 
         if (selectedType === 'fotocopiadora') {
+            const marca = marcaSelect.value;
             const numeroLista = numeroListaInput.value.trim();
             const existente = productos.find(p =>
                 p.tipo === 'fotocopiadora' &&
@@ -933,29 +966,35 @@
             }
             numeroListaInput.value = '';
         } else {
-            let cantidad = parseInt(cantidadInput.value) || 1;
-            if (cantidad <= 0) cantidad = 1;
+            const modelo = tonerModeloInput.value.trim();
+            if (!modelo) {
+                showToast("Escribe el modelo del tóner");
+                tonerModeloInput.focus();
+                return;
+            }
 
             const existente = productos.find(p =>
                 p.tipo === 'toner' &&
-                p.marca === marca &&
+                !p.marca &&
+                (p.modelo || '').toLowerCase() === modelo.toLowerCase() &&
                 p.stand === stand
             );
 
             if (existente) {
-                existente.stockTotal += cantidad;
-                showToast(`Stock sumado +${cantidad}`);
+                existente.stockTotal += 1;
+                showToast("Stock sumado +1");
             } else {
                 productos.push({
                     id: nextId++,
                     tipo: 'toner',
-                    marca,
+                    marca: '',
+                    modelo,
                     stand,
-                    stockTotal: cantidad
+                    stockTotal: 1
                 });
-                showToast(`Tóner agregado (${cantidad} uds)`);
+                showToast("Tóner agregado");
             }
-            cantidadInput.value = '1';
+            tonerModeloInput.value = '';
         }
 
         selectedType = null;
@@ -1029,14 +1068,15 @@
             let stockTotalGrupo = 0;
             for (const v of grupo.variantes) stockTotalGrupo += (v.stockTotal || 0);
 
+            const titulo = esFoto ? grupo.marca : (grupo.modelo || grupo.marca);
             const subtitulo = esFoto
                 ? 'Fotocopiadora' + (grupo.numeroLista ? ', lista ' + escapeHtml(grupo.numeroLista) : '')
-                : 'Tóner / cartucho';
+                : 'Tóner / cartucho' + (grupo.modelo && grupo.marca ? ', ' + escapeHtml(grupo.marca) : '');
 
             const cabecera = `
                 <div class="item-top">
                     <div class="item-icon">${ico(esFoto ? 'printer' : 'toner')}</div>
-                    <div class="item-title">${escapeHtml(grupo.marca)}<small>${subtitulo}</small></div>
+                    <div class="item-title">${escapeHtml(titulo)}<small>${subtitulo}</small></div>
                     <div class="stand-tag"><small>Stand</small>${escapeHtml(grupo.stand)}</div>
                 </div>`;
 
@@ -1135,7 +1175,7 @@
         renderizarInventario();
         if (prod.stockTotal === 0) {
             setTimeout(() => {
-                if (confirm(`"${prod.marca}" está agotado. ¿Eliminar?`)) {
+                if (confirm(`"${nombreProd(prod)}" está agotado. ¿Eliminar?`)) {
                     eliminarProducto(prod.id);
                 }
             }, 100);
@@ -1145,7 +1185,7 @@
     function eliminarProducto(id) {
         const prod = productos.find(p => p.id === id);
         if (!prod) return;
-        if (confirm(`¿Eliminar "${prod.marca}"${prod.numeroLista ? ' (Lista: ' + prod.numeroLista + ')' : ''}?`)) {
+        if (confirm(`¿Eliminar "${nombreProd(prod)}"${prod.numeroLista ? ' (Lista: ' + prod.numeroLista + ')' : ''}?`)) {
             productos = productos.filter(p => p.id !== id);
             guardarEnStorage();
             renderizarInventario();
@@ -1154,14 +1194,12 @@
     }
 
     function eliminarGrupo(grupoKey) {
-        const partes = grupoKey.split('||');
-        const tipo = partes[0], marca = partes[1], stand = partes[partes.length - 1];
-        const aEliminar = productos.filter(p =>
-            p.tipo === tipo && p.marca === marca && p.stand === stand
-        );
+        const aEliminar = productos.filter(p => getGrupoKey(p) === grupoKey);
         if (aEliminar.length === 0) return;
-        if (confirm(`¿Eliminar TODOS los "${marca}" del Stand ${stand}? (${aEliminar.length} registro(s))`)) {
-            productos = productos.filter(p => !(p.tipo === tipo && p.marca === marca && p.stand === stand));
+        const nombre = nombreProd(aEliminar[0]);
+        const stand = aEliminar[0].stand;
+        if (confirm(`¿Eliminar TODOS los "${nombre}" del Stand ${stand}? (${aEliminar.length} registro(s))`)) {
+            productos = productos.filter(p => getGrupoKey(p) !== grupoKey);
             guardarEnStorage();
             renderizarInventario();
             showToast("Grupo eliminado");
@@ -1171,9 +1209,8 @@
     // ==================== VENTANA DE STAND (por grupo) ====================
     function abrirStandPickerPorGrupo(grupoKey) {
         const partes = grupoKey.split('||');
-        const tipo = partes[0], marca = partes[1];
         const standActual = partes[partes.length - 1];
-        standPickerProductId = { grupoKey, tipo, marca, standActual };
+        standPickerProductId = { grupoKey, standActual };
 
         standGrid.innerHTML = STANDS_VALIDOS.map(s => `
             <button type="button" class="stand-option ${standActual === s ? 'selected' : ''}" data-stand="${s}">Stand ${s}</button>
@@ -1196,19 +1233,16 @@
 
     function cambiarStandGrupo(info, nuevoStand) {
         if (!info || info.standActual === nuevoStand) return;
-        const { tipo, marca, standActual } = info;
 
-        const grupoOrigen = productos.filter(p =>
-            p.tipo === tipo && p.marca === marca && p.stand === standActual
-        );
+        const grupoOrigen = productos.filter(p => getGrupoKey(p) === info.grupoKey);
         if (grupoOrigen.length === 0) return;
 
-        const grupoDestino = productos.filter(p =>
-            p.tipo === tipo && p.marca === marca && p.stand === nuevoStand
-        );
+        const keyDestino = getGrupoKey({ ...grupoOrigen[0], stand: nuevoStand });
+        const grupoDestino = productos.filter(p => getGrupoKey(p) === keyDestino);
+        const nombre = nombreProd(grupoOrigen[0]);
 
         if (grupoDestino.length > 0) {
-            if (confirm(`Ya existe "${marca}" en Stand ${nuevoStand}. ¿Fusionar?`)) {
+            if (confirm(`Ya existe "${nombre}" en Stand ${nuevoStand}. ¿Fusionar?`)) {
                 const destino = grupoDestino[0];
                 for (const o of grupoOrigen) {
                     destino.stockTotal += o.stockTotal;
@@ -1296,9 +1330,9 @@
         const headers = ["Tipo", "Marca", "N° Lista", "Modelo", "Serie", "Contador", "Stand", "Stock"];
         const rows = productos.map(p => [
             p.tipo === 'fotocopiadora' ? 'Fotocopiadora' : 'Tóner',
-            p.marca,
+            p.marca || '---',
             p.tipo === 'fotocopiadora' ? (p.numeroLista || '') : '---',
-            p.tipo === 'fotocopiadora' ? (p.modelo || '') : '---',
+            p.modelo || (p.tipo === 'fotocopiadora' ? '' : '---'),
             p.tipo === 'fotocopiadora' ? (p.serie || '') : '---',
             p.tipo === 'fotocopiadora' ? (p.contador || 0) : '---',
             `Stand ${p.stand}`,
@@ -1319,9 +1353,9 @@
         const tableColumn = ["Tipo", "Marca", "N° Lista", "Modelo", "Serie", "Contador", "Stand", "Stock"];
         const tableRows = productos.map(p => [
             p.tipo === 'fotocopiadora' ? 'Fotocopiadora' : 'Tóner',
-            p.marca,
+            p.marca || '---',
             p.tipo === 'fotocopiadora' ? (p.numeroLista || '') : '---',
-            p.tipo === 'fotocopiadora' ? (p.modelo || '') : '---',
+            p.modelo || (p.tipo === 'fotocopiadora' ? '' : '---'),
             p.tipo === 'fotocopiadora' ? (p.serie || '') : '---',
             p.tipo === 'fotocopiadora' ? (p.contador || 0).toString() : '---',
             `Stand ${p.stand}`,
@@ -1364,6 +1398,67 @@
         });
         doc.save(`inventario_${new Date().toISOString().slice(0,19)}.pdf`);
     }
+
+    // ==================== RESPALDO (pasar datos entre dispositivos) ====================
+    async function guardarRespaldo() {
+        if (productos.length === 0) { showToast("No hay datos para respaldar"); return; }
+        const contenido = JSON.stringify({
+            app: 'grinser-inventario',
+            version: 1,
+            fecha: new Date().toISOString(),
+            nextId,
+            productos
+        }, null, 2);
+        const nombre = `respaldo_inventario_${new Date().toISOString().slice(0, 10)}.json`;
+        const archivo = new File([contenido], nombre, { type: 'application/json' });
+
+        if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
+            try {
+                await navigator.share({ files: [archivo], title: 'Respaldo de inventario' });
+                return;
+            } catch (e) {
+                if (e && e.name === 'AbortError') return;
+            }
+        }
+        const url = URL.createObjectURL(archivo);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = nombre;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast("Respaldo descargado");
+    }
+
+    function cargarRespaldo(archivo) {
+        if (!archivo) return;
+        const lector = new FileReader();
+        lector.onload = () => {
+            try {
+                const datos = JSON.parse(lector.result);
+                if (!datos || !Array.isArray(datos.productos)) throw new Error('Formato inválido');
+                const cantidad = datos.productos.length;
+                if (!confirm(`El respaldo tiene ${cantidad} registro(s). Esto reemplazará los datos de este dispositivo. ¿Continuar?`)) return;
+                productos = datos.productos;
+                const maxId = productos.reduce((m, p) => Math.max(m, p.id || 0), 0);
+                nextId = Math.max(datos.nextId || 1, maxId + 1);
+                guardarEnStorage();
+                renderizarInventario();
+                showToast("Respaldo cargado");
+            } catch (e) {
+                showToast("El archivo no es un respaldo válido");
+            }
+        };
+        lector.readAsText(archivo);
+    }
+
+    document.getElementById('backupBtn').addEventListener('click', guardarRespaldo);
+    document.getElementById('restoreBtn').addEventListener('click', () => document.getElementById('restoreInput').click());
+    document.getElementById('restoreInput').addEventListener('change', (e) => {
+        cargarRespaldo(e.target.files[0]);
+        e.target.value = '';
+    });
 
     // ==================== INICIALIZACIÓN ====================
     cargarDesdeStorage();
